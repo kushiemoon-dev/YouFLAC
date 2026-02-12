@@ -175,7 +175,7 @@ func TestSetItemError(t *testing.T) {
 	id, _ := q.AddToQueue(DownloadRequest{VideoURL: "https://youtube.com/watch?v=test"})
 
 	testErr := "download failed: network error"
-	q.SetItemError(id, fmt.Errorf(testErr))
+	q.SetItemError(id, fmt.Errorf("%s", testErr))
 
 	item := q.GetItem(id)
 	if item.Status != StatusError {
