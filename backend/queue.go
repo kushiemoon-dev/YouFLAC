@@ -23,6 +23,7 @@ const (
 	StatusComplete         QueueStatus = "complete"
 	StatusError            QueueStatus = "error"
 	StatusCancelled        QueueStatus = "cancelled"
+	StatusPaused           QueueStatus = "paused"
 )
 
 // QueueItem represents a single download in the queue
@@ -55,6 +56,7 @@ type QueueItem struct {
 	AudioSource     string `json:"audioSource,omitempty"`   // tidal, qobuz, amazon, etc.
 	Quality         string `json:"quality,omitempty"`       // Requested quality tier
 	ActualQuality   string `json:"actualQuality,omitempty"` // Actual quality obtained (may differ from requested)
+	Explicit        bool   `json:"explicit,omitempty"`      // Track has explicit content flag
 
 	// Audio-only fallback (video unavailable)
 	AudioOnly bool `json:"audioOnly,omitempty"`
@@ -386,6 +388,56 @@ func (q *Queue) CancelItem(id string) error {
 			}
 			q.items[i].Status = StatusCancelled
 			q.items[i].Stage = "Cancelled"
+			return nil
+		}
+	}
+	return fmt.Errorf("item not found: %s", id)
+}
+
+// PauseItem cancels the in-progress download and marks the item as paused.
+// The item can be resumed later by calling ResumeItem.
+func (q *Queue) PauseItem(id string) error {
+	q.mutex.Lock()
+	defer q.mutex.Unlock()
+
+	for i := range q.items {
+		if q.items[i].ID == id {
+			// Only active items can be paused
+			switch q.items[i].Status {
+			case StatusPending, StatusFetchingInfo, StatusDownloadingVideo,
+				StatusDownloadingAudio, StatusMuxing, StatusOrganizing:
+			default:
+				return fmt.Errorf("item %s is not in a pausable state (%s)", id, q.items[i].Status)
+			}
+			if q.items[i].cancelFunc != nil {
+				q.items[i].cancelFunc()
+			}
+			q.items[i].Status = StatusPaused
+			q.items[i].Stage = "Paused"
+			item := q.items[i]
+			go q.emit(QueueEvent{Type: "updated", ItemID: id, Item: &item})
+			return nil
+		}
+	}
+	return fmt.Errorf("item not found: %s", id)
+}
+
+// ResumeItem re-queues a paused item by resetting it to pending.
+func (q *Queue) ResumeItem(id string) error {
+	q.mutex.Lock()
+	defer q.mutex.Unlock()
+
+	for i := range q.items {
+		if q.items[i].ID == id {
+			if q.items[i].Status != StatusPaused {
+				return fmt.Errorf("item %s is not paused (status: %s)", id, q.items[i].Status)
+			}
+			q.items[i].Status = StatusPending
+			q.items[i].Progress = 0
+			q.items[i].Stage = "Waiting... (resumed)"
+			q.items[i].cancelFunc = nil
+			item := q.items[i]
+			go q.emit(QueueEvent{Type: "updated", ItemID: id, Item: &item})
 			return nil
 		}
 	}
