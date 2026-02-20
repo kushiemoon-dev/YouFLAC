@@ -82,6 +82,7 @@ func (s *Server) setupRoutes() {
 	api.Post("/queue/:id/cancel", s.handleCancelQueueItem)
 	api.Post("/queue/:id/pause", s.handlePauseQueueItem)
 	api.Post("/queue/:id/resume", s.handleResumeQueueItem)
+	api.Post("/queue/:id/retry-override", s.handleRetryQueueItemWithOverride)
 	api.Put("/queue/:id/move", s.handleMoveQueueItem)
 
 	// Playlist routes
