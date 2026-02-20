@@ -5,7 +5,7 @@
 ### YouTube Video + Lossless FLAC Audio = Perfect MKV
 
 [![GitHub Release](https://img.shields.io/github/v/release/kushiemoon-dev/YouFLAC?style=flat-square&color=e91e8c)](https://github.com/kushiemoon-dev/YouFLAC/releases/latest)
-[![Docker Pulls](https://img.shields.io/docker/pulls/kushiemoon-dev/youflac?style=flat-square&color=2496ED&logo=docker&logoColor=white)](https://ghcr.io/kushiemoon-dev/youflac)
+[![ghcr.io](https://img.shields.io/badge/ghcr.io-youflac-2496ED?style=flat-square&logo=docker&logoColor=white)](https://github.com/kushiemoon-dev/YouFLAC/pkgs/container/youflac)
 [![License](https://img.shields.io/github/license/kushiemoon-dev/YouFLAC?style=flat-square&color=gray)](LICENSE)
 [![Go](https://img.shields.io/badge/Go-1.25-00ADD8?style=flat-square&logo=go&logoColor=white)](https://go.dev)
 
