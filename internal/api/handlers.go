@@ -13,7 +13,7 @@ import (
 	"youflac/backend"
 )
 
-const AppVersion = "1.0.1"
+const AppVersion = "2.0.0"
 
 // Health check
 func (s *Server) handleHealth(c *fiber.Ctx) error {
