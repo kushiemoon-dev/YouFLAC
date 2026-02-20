@@ -1,5 +1,8 @@
-import type { QueueItem as QueueItemType } from '../../lib/api';
+import { useState } from 'react';
+import type { QueueItem as QueueItemType, RetryOverrideRequest } from '../../lib/api';
+import { retryWithOverride } from '../../lib/api';
 import { ProgressBar } from './ProgressBar';
+import { EditMetadataModal } from './EditMetadataModal';
 import type { QueueStatus } from '../../types';
 
 // Icons
@@ -28,6 +31,13 @@ const RefreshIcon = () => (
     <polyline points="23 4 23 10 17 10" />
     <polyline points="1 20 1 14 7 14" />
     <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
+  </svg>
+);
+
+const PencilIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
   </svg>
 );
 
@@ -74,8 +84,16 @@ export function QueueItem({ item, onCancel, onRemove, onRetry, onOpenFolder }: Q
   const status = item.status as QueueStatus;
   const isProcessing = !['complete', 'error', 'cancelled', 'pending'].includes(status);
   const badge = getStatusBadge(status);
+  const [showEditModal, setShowEditModal] = useState(false);
+
+  function handleRetryOverride(id: string, override: RetryOverrideRequest) {
+    retryWithOverride(id, override).catch(() => {
+      // Silently fall back — the queue will reflect error state via WebSocket
+    });
+  }
 
   return (
+    <>
     <div
       className="card p-4 animate-slide-up"
       style={{
@@ -155,12 +173,21 @@ export function QueueItem({ item, onCancel, onRemove, onRetry, onOpenFolder }: Q
 
           {/* Error message */}
           {status === 'error' && item.error && (
-            <p
-              className="mt-2 text-sm"
-              style={{ color: 'var(--color-error)' }}
-            >
-              {item.error}
-            </p>
+            <div className="mt-2">
+              <p className="text-sm" style={{ color: 'var(--color-error)' }}>
+                {item.error}
+              </p>
+              {item.matchCandidates && item.matchCandidates.length > 0 && (
+                <p className="text-xs mt-0.5" style={{ color: 'var(--color-text-tertiary)' }}>
+                  {item.matchCandidates.length} candidate{item.matchCandidates.length > 1 ? 's' : ''} found — click &quot;Edit &amp; Retry&quot; to select
+                </p>
+              )}
+              {item.matchDiagnostics?.failureReason && !item.matchCandidates?.length && (
+                <p className="text-xs mt-0.5" style={{ color: 'var(--color-text-tertiary)' }}>
+                  {item.matchDiagnostics.failureReason}
+                </p>
+              )}
+            </div>
           )}
 
           {/* Actions row */}
@@ -192,6 +219,17 @@ export function QueueItem({ item, onCancel, onRemove, onRetry, onOpenFolder }: Q
                   title="Retry"
                 >
                   <RefreshIcon />
+                </button>
+              )}
+
+              {/* Edit & Retry button for errors */}
+              {status === 'error' && (
+                <button
+                  className="btn-icon"
+                  onClick={() => setShowEditModal(true)}
+                  title="Edit metadata &amp; retry"
+                >
+                  <PencilIcon />
                 </button>
               )}
 
@@ -233,5 +271,14 @@ export function QueueItem({ item, onCancel, onRemove, onRetry, onOpenFolder }: Q
         </div>
       </div>
     </div>
+
+    {showEditModal && (
+      <EditMetadataModal
+        item={item}
+        onClose={() => setShowEditModal(false)}
+        onRetry={handleRetryOverride}
+      />
+    )}
+    </>
   );
 }
