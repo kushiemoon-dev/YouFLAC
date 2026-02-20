@@ -19,7 +19,7 @@ RUN npm run build
 # ============================================
 # Stage 2: Build Backend
 # ============================================
-FROM golang:1.23-bookworm AS backend-builder
+FROM golang:1.25-bookworm AS backend-builder
 
 WORKDIR /app
 
