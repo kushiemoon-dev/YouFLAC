@@ -69,15 +69,15 @@ type StreamInfo struct {
 
 // MuxResult contains the result of a muxing operation
 type MuxResult struct {
-	OutputPath   string        `json:"outputPath"`
-	Duration     float64       `json:"duration"`
-	FileSize     int64         `json:"fileSize"`
-	VideoCodec   string        `json:"videoCodec"`
-	AudioCodec   string        `json:"audioCodec"`
-	ElapsedTime  time.Duration `json:"elapsedTime"`
-	HasCoverArt  bool          `json:"hasCoverArt"`
-	HasMetadata  bool          `json:"hasMetadata"`
-	HasChapters  bool          `json:"hasChapters"`
+	OutputPath  string        `json:"outputPath"`
+	Duration    float64       `json:"duration"`
+	FileSize    int64         `json:"fileSize"`
+	VideoCodec  string        `json:"videoCodec"`
+	AudioCodec  string        `json:"audioCodec"`
+	ElapsedTime time.Duration `json:"elapsedTime"`
+	HasCoverArt bool          `json:"hasCoverArt"`
+	HasMetadata bool          `json:"hasMetadata"`
+	HasChapters bool          `json:"hasChapters"`
 }
 
 // ProgressCallback is called during muxing with progress updates
@@ -112,7 +112,6 @@ func MuxVideoAudio(videoPath, audioPath, outputPath string, opts MuxOptions) err
 
 // MuxVideoAudioWithProgress combines video and audio with progress callback
 func MuxVideoAudioWithProgress(videoPath, audioPath, outputPath string, opts MuxOptions, progress ProgressCallback) error {
-	// Validate input files exist
 	if _, err := os.Stat(videoPath); os.IsNotExist(err) {
 		return fmt.Errorf("video file not found: %s", videoPath)
 	}
@@ -120,7 +119,6 @@ func MuxVideoAudioWithProgress(videoPath, audioPath, outputPath string, opts Mux
 		return fmt.Errorf("audio file not found: %s", audioPath)
 	}
 
-	// Ensure output directory exists
 	outputDir := filepath.Dir(outputPath)
 	if err := os.MkdirAll(outputDir, 0755); err != nil {
 		return fmt.Errorf("failed to create output directory: %w", err)
@@ -130,36 +128,30 @@ func MuxVideoAudioWithProgress(videoPath, audioPath, outputPath string, opts Mux
 		progress(0, "Preparing mux")
 	}
 
-	// Build FFmpeg arguments
 	ffmpegPath := GetFFmpegPath()
 	args := []string{}
 
-	// Overwrite flag
 	if opts.Overwrite {
 		args = append(args, "-y")
 	} else {
 		args = append(args, "-n")
 	}
 
-	// Input files
 	args = append(args, "-i", videoPath)
 	args = append(args, "-i", audioPath)
 
-	// Add cover art as third input if provided
 	hasCover := opts.CoverArtPath != "" && fileExists(opts.CoverArtPath)
 	if hasCover {
 		args = append(args, "-i", opts.CoverArtPath)
 	}
 
-	// Map streams
-	args = append(args, "-map", "0:v:0") // First video stream from first input
-	args = append(args, "-map", "1:a:0") // First audio stream from second input
+	args = append(args, "-map", "0:v:0")
+	args = append(args, "-map", "1:a:0")
 
 	if hasCover {
-		args = append(args, "-map", "2:0") // Cover art as attachment
+		args = append(args, "-map", "2:0")
 	}
 
-	// Codec settings - stream copy (no re-encoding)
 	videoCodec := opts.VideoCodec
 	if videoCodec == "" {
 		videoCodec = "copy"
@@ -172,37 +164,29 @@ func MuxVideoAudioWithProgress(videoPath, audioPath, outputPath string, opts Mux
 	args = append(args, "-c:v", videoCodec)
 	args = append(args, "-c:a", audioCodec)
 
-	// Cover art settings
 	if hasCover {
-		args = append(args, "-c:v:1", "mjpeg") // Cover as MJPEG
+		args = append(args, "-c:v:1", "mjpeg")
 		args = append(args, "-disposition:v:1", "attached_pic")
 	}
 
-	// Add metadata
 	for key, value := range opts.Metadata {
 		if value != "" {
 			args = append(args, "-metadata", fmt.Sprintf("%s=%s", key, value))
 		}
 	}
 
-	// MKV-specific options
-	args = append(args, "-f", "matroska") // Force MKV format
-
-	// Output file
+	args = append(args, "-f", "matroska")
 	args = append(args, outputPath)
 
 	if progress != nil {
 		progress(10, "Starting FFmpeg")
 	}
 
-	// Execute FFmpeg
 	cmd := exec.Command(ffmpegPath, args...)
-
 	var stderr bytes.Buffer
 	cmd.Stderr = &stderr
 
-	err := cmd.Run()
-	if err != nil {
+	if err := cmd.Run(); err != nil {
 		return &MuxError{
 			Command: ffmpegPath,
 			Args:    args,
@@ -226,7 +210,6 @@ func MuxVideoWithFLAC(videoPath, audioPath, outputPath string, metadata *Metadat
 		progress(0, "Initializing")
 	}
 
-	// Get input media info for validation
 	videoInfo, err := GetMediaInfo(videoPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get video info: %w", err)
@@ -248,7 +231,6 @@ func MuxVideoWithFLAC(videoPath, audioPath, outputPath string, metadata *Metadat
 		progress(10, "Validating inputs")
 	}
 
-	// Build metadata map
 	metadataMap := make(map[string]string)
 	if metadata != nil {
 		if metadata.Title != "" {
@@ -268,7 +250,6 @@ func MuxVideoWithFLAC(videoPath, audioPath, outputPath string, metadata *Metadat
 		}
 	}
 
-	// Build mux options
 	opts := MuxOptions{
 		VideoCodec:   "copy",
 		AudioCodec:   "copy",
@@ -277,12 +258,9 @@ func MuxVideoWithFLAC(videoPath, audioPath, outputPath string, metadata *Metadat
 		Overwrite:    true,
 	}
 
-	// Execute muxing with progress wrapper
 	muxProgress := func(p float64, stage string) {
 		if progress != nil {
-			// Scale to 20-90% range
-			scaled := 20 + (p * 0.7)
-			progress(scaled, stage)
+			progress(20+(p*0.7), stage)
 		}
 	}
 
@@ -294,13 +272,11 @@ func MuxVideoWithFLAC(videoPath, audioPath, outputPath string, metadata *Metadat
 		progress(95, "Finalizing")
 	}
 
-	// Get output file info
 	outputInfo, err := os.Stat(outputPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to verify output: %w", err)
 	}
 
-	// Get output media info
 	outputMediaInfo, err := GetMediaInfo(outputPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get output info: %w", err)
@@ -311,24 +287,23 @@ func MuxVideoWithFLAC(videoPath, audioPath, outputPath string, metadata *Metadat
 	}
 
 	return &MuxResult{
-		OutputPath:   outputPath,
-		Duration:     outputMediaInfo.Duration,
-		FileSize:     outputInfo.Size(),
-		VideoCodec:   outputMediaInfo.VideoCodec,
-		AudioCodec:   outputMediaInfo.AudioCodec,
-		ElapsedTime:  time.Since(startTime),
-		HasCoverArt:  coverPath != "" && fileExists(coverPath),
-		HasMetadata:  len(metadataMap) > 0,
-		HasChapters:  false,
+		OutputPath:  outputPath,
+		Duration:    outputMediaInfo.Duration,
+		FileSize:    outputInfo.Size(),
+		VideoCodec:  outputMediaInfo.VideoCodec,
+		AudioCodec:  outputMediaInfo.AudioCodec,
+		ElapsedTime: time.Since(startTime),
+		HasCoverArt: coverPath != "" && fileExists(coverPath),
+		HasMetadata: len(metadataMap) > 0,
+		HasChapters: false,
 	}, nil
 }
 
-// CreateFLACWithMetadata creates a FLAC file with embedded metadata and optional cover art
-// Used for audio-only fallback when video is unavailable
+// CreateFLACWithMetadata creates a FLAC file with embedded metadata and optional cover art.
+// Used for audio-only fallback when video is unavailable.
 func CreateFLACWithMetadata(audioPath, outputPath string, metadata *Metadata, coverPath string) (*MuxResult, error) {
 	startTime := time.Now()
 
-	// Get audio info for validation
 	audioInfo, err := GetMediaInfo(audioPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get audio info: %w", err)
@@ -339,44 +314,29 @@ func CreateFLACWithMetadata(audioPath, outputPath string, metadata *Metadata, co
 	}
 
 	ffmpegPath := GetFFmpegPath()
-
-	// Build ffmpeg command
-	args := []string{"-y"} // Overwrite output
-
-	// Input audio file
+	args := []string{"-y"}
 	args = append(args, "-i", audioPath)
 
-	// Input cover art if available
 	hasCover := coverPath != "" && fileExists(coverPath)
 	if hasCover {
 		args = append(args, "-i", coverPath)
 	}
 
-	// Map audio stream
 	args = append(args, "-map", "0:a")
-
-	// Map cover art if available
 	if hasCover {
 		args = append(args, "-map", "1:0")
 	}
 
-	// Audio codec: convert to FLAC if not already, otherwise copy
-	isAlreadyFLAC := strings.EqualFold(audioInfo.AudioCodec, "flac")
-	if isAlreadyFLAC {
+	if strings.EqualFold(audioInfo.AudioCodec, "flac") {
 		args = append(args, "-c:a", "copy")
 	} else {
-		// Convert to FLAC with high quality
-		args = append(args, "-c:a", "flac")
-		args = append(args, "-compression_level", "8")
+		args = append(args, "-c:a", "flac", "-compression_level", "8")
 	}
 
-	// Cover art codec (MJPEG for embedded pictures)
 	if hasCover {
-		args = append(args, "-c:v", "mjpeg")
-		args = append(args, "-disposition:v", "attached_pic")
+		args = append(args, "-c:v", "mjpeg", "-disposition:v", "attached_pic")
 	}
 
-	// Add metadata
 	if metadata != nil {
 		if metadata.Title != "" {
 			args = append(args, "-metadata", fmt.Sprintf("TITLE=%s", metadata.Title))
@@ -395,12 +355,10 @@ func CreateFLACWithMetadata(audioPath, outputPath string, metadata *Metadata, co
 		}
 	}
 
-	// Output file
 	args = append(args, outputPath)
 
 	fmt.Printf("[FFmpeg] Creating FLAC: %s\n", strings.Join(args, " "))
 
-	// Execute ffmpeg
 	cmd := exec.Command(ffmpegPath, args...)
 	var stderr bytes.Buffer
 	cmd.Stderr = &stderr
@@ -409,13 +367,11 @@ func CreateFLACWithMetadata(audioPath, outputPath string, metadata *Metadata, co
 		return nil, fmt.Errorf("ffmpeg failed: %v - %s", err, stderr.String())
 	}
 
-	// Get output file info
 	outputInfo, err := os.Stat(outputPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to verify output: %w", err)
 	}
 
-	// Get output media info
 	outputMediaInfo, err := GetMediaInfo(outputPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get output info: %w", err)
@@ -457,22 +413,21 @@ func GetMediaInfo(filePath string) (*MediaInfo, error) {
 		return nil, fmt.Errorf("ffprobe failed: %v - %s", err, stderr.String())
 	}
 
-	// Parse JSON output
 	var probeData struct {
 		Streams []struct {
-			Index         int     `json:"index"`
-			CodecName     string  `json:"codec_name"`
-			CodecLongName string  `json:"codec_long_name"`
-			CodecType     string  `json:"codec_type"`
-			Profile       string  `json:"profile"`
-			Width         int     `json:"width"`
-			Height        int     `json:"height"`
-			SampleRate    string  `json:"sample_rate"`
-			Channels      int     `json:"channels"`
-			BitRate       string  `json:"bit_rate"`
-			Duration      string  `json:"duration"`
-			RFrameRate    string  `json:"r_frame_rate"`
-			AvgFrameRate  string  `json:"avg_frame_rate"`
+			Index         int    `json:"index"`
+			CodecName     string `json:"codec_name"`
+			CodecLongName string `json:"codec_long_name"`
+			CodecType     string `json:"codec_type"`
+			Profile       string `json:"profile"`
+			Width         int    `json:"width"`
+			Height        int    `json:"height"`
+			SampleRate    string `json:"sample_rate"`
+			Channels      int    `json:"channels"`
+			BitRate       string `json:"bit_rate"`
+			Duration      string `json:"duration"`
+			RFrameRate    string `json:"r_frame_rate"`
+			AvgFrameRate  string `json:"avg_frame_rate"`
 		} `json:"streams"`
 		Format struct {
 			Filename   string `json:"filename"`
@@ -491,17 +446,13 @@ func GetMediaInfo(filePath string) (*MediaInfo, error) {
 		Format: probeData.Format.FormatName,
 	}
 
-	// Parse duration
 	if d, err := strconv.ParseFloat(probeData.Format.Duration, 64); err == nil {
 		info.Duration = d
 	}
-
-	// Parse bitrate
 	if br, err := strconv.ParseInt(probeData.Format.BitRate, 10, 64); err == nil {
 		info.Bitrate = br
 	}
 
-	// Process streams
 	for _, stream := range probeData.Streams {
 		switch stream.CodecType {
 		case "video":
@@ -555,227 +506,13 @@ func GetMediaInfo(filePath string) (*MediaInfo, error) {
 	return info, nil
 }
 
-// EmbedMetadata adds/updates metadata in existing MKV using mkvpropedit or ffmpeg
-func EmbedMetadata(mkvPath string, metadata map[string]string) error {
-	if _, err := os.Stat(mkvPath); os.IsNotExist(err) {
-		return fmt.Errorf("file not found: %s", mkvPath)
-	}
-
-	// Try mkvpropedit first (more reliable for MKV)
-	mkvpropeditPath, err := exec.LookPath("mkvpropedit")
-	if err == nil {
-		return embedMetadataMkvpropedit(mkvPath, metadata, mkvpropeditPath)
-	}
-
-	// Fall back to ffmpeg (requires re-mux)
-	return embedMetadataFFmpeg(mkvPath, metadata)
-}
-
-func embedMetadataMkvpropedit(mkvPath string, metadata map[string]string, mkvpropeditPath string) error {
-	// For full metadata, use --edit info
-	args := []string{mkvPath, "--edit", "info"}
-	for key, value := range metadata {
-		if value != "" {
-			switch strings.ToLower(key) {
-			case "title":
-				args = append(args, "--set", fmt.Sprintf("title=%s", value))
-			case "artist":
-				// MKV doesn't have a standard artist field in segment info
-				// We'll skip it here as it's better handled via ffmpeg or tags
-			case "album":
-				// Same as artist
-			}
-		}
-	}
-
-	cmd := exec.Command(mkvpropeditPath, args...)
-	var stderr bytes.Buffer
-	cmd.Stderr = &stderr
-
-	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("mkvpropedit failed: %v - %s", err, stderr.String())
-	}
-
-	return nil
-}
-
-func embedMetadataFFmpeg(mkvPath string, metadata map[string]string) error {
-	// FFmpeg requires re-muxing to change metadata
-	tempPath := mkvPath + ".tmp"
-
-	args := []string{
-		"-y",
-		"-i", mkvPath,
-		"-c", "copy",
-	}
-
-	for key, value := range metadata {
-		if value != "" {
-			args = append(args, "-metadata", fmt.Sprintf("%s=%s", key, value))
-		}
-	}
-
-	args = append(args, tempPath)
-
-	cmd := exec.Command(GetFFmpegPath(), args...)
-	var stderr bytes.Buffer
-	cmd.Stderr = &stderr
-
-	if err := cmd.Run(); err != nil {
-		os.Remove(tempPath)
-		return fmt.Errorf("ffmpeg metadata failed: %v - %s", err, stderr.String())
-	}
-
-	// Replace original with temp
-	if err := os.Rename(tempPath, mkvPath); err != nil {
-		os.Remove(tempPath)
-		return fmt.Errorf("failed to replace file: %w", err)
-	}
-
-	return nil
-}
-
-// EmbedCoverArt adds cover art to existing MKV
-func EmbedCoverArt(mkvPath, coverPath string) error {
-	if _, err := os.Stat(mkvPath); os.IsNotExist(err) {
-		return fmt.Errorf("mkv file not found: %s", mkvPath)
-	}
-	if _, err := os.Stat(coverPath); os.IsNotExist(err) {
-		return fmt.Errorf("cover file not found: %s", coverPath)
-	}
-
-	// Try mkvpropedit first
-	mkvpropeditPath, err := exec.LookPath("mkvpropedit")
-	if err == nil {
-		return embedCoverMkvpropedit(mkvPath, coverPath, mkvpropeditPath)
-	}
-
-	// Fall back to ffmpeg
-	return embedCoverFFmpeg(mkvPath, coverPath)
-}
-
-func embedCoverMkvpropedit(mkvPath, coverPath, mkvpropeditPath string) error {
-	// mkvpropedit can add attachments
-	args := []string{
-		mkvPath,
-		"--add-attachment", coverPath,
-	}
-
-	cmd := exec.Command(mkvpropeditPath, args...)
-	var stderr bytes.Buffer
-	cmd.Stderr = &stderr
-
-	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("mkvpropedit cover failed: %v - %s", err, stderr.String())
-	}
-
-	return nil
-}
-
-func embedCoverFFmpeg(mkvPath, coverPath string) error {
-	tempPath := mkvPath + ".tmp"
-
-	args := []string{
-		"-y",
-		"-i", mkvPath,
-		"-i", coverPath,
-		"-map", "0",
-		"-map", "1:0",
-		"-c", "copy",
-		"-c:v:1", "mjpeg",
-		"-disposition:v:1", "attached_pic",
-		tempPath,
-	}
-
-	cmd := exec.Command(GetFFmpegPath(), args...)
-	var stderr bytes.Buffer
-	cmd.Stderr = &stderr
-
-	if err := cmd.Run(); err != nil {
-		os.Remove(tempPath)
-		return fmt.Errorf("ffmpeg cover failed: %v - %s", err, stderr.String())
-	}
-
-	if err := os.Rename(tempPath, mkvPath); err != nil {
-		os.Remove(tempPath)
-		return fmt.Errorf("failed to replace file: %w", err)
-	}
-
-	return nil
-}
-
-// AddChapters adds chapter markers to MKV
-func AddChapters(mkvPath string, chapters []Chapter) error {
-	if len(chapters) == 0 {
-		return nil
-	}
-
-	// Create chapters file in WebVTT-like format for mkvpropedit
-	chaptersFile, err := os.CreateTemp("", "chapters-*.xml")
-	if err != nil {
-		return fmt.Errorf("failed to create chapters file: %w", err)
-	}
-	defer os.Remove(chaptersFile.Name())
-
-	// Write XML chapters format
-	var xml strings.Builder
-	xml.WriteString(`<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE Chapters SYSTEM "matroskachapters.dtd">
-<Chapters>
-  <EditionEntry>
-`)
-	for i, ch := range chapters {
-		startNs := int64(ch.StartTime * 1e9)
-		endNs := int64(ch.EndTime * 1e9)
-		xml.WriteString(fmt.Sprintf(`    <ChapterAtom>
-      <ChapterUID>%d</ChapterUID>
-      <ChapterTimeStart>%d</ChapterTimeStart>
-      <ChapterTimeEnd>%d</ChapterTimeEnd>
-      <ChapterDisplay>
-        <ChapterString>%s</ChapterString>
-        <ChapterLanguage>eng</ChapterLanguage>
-      </ChapterDisplay>
-    </ChapterAtom>
-`, i+1, startNs, endNs, ch.Title))
-	}
-	xml.WriteString(`  </EditionEntry>
-</Chapters>
-`)
-
-	if _, err := chaptersFile.WriteString(xml.String()); err != nil {
-		return err
-	}
-	chaptersFile.Close()
-
-	// Try mkvpropedit
-	mkvpropeditPath, err := exec.LookPath("mkvpropedit")
-	if err != nil {
-		return fmt.Errorf("mkvpropedit not found, chapters require mkvtoolnix")
-	}
-
-	args := []string{
-		mkvPath,
-		"--chapters", chaptersFile.Name(),
-	}
-
-	cmd := exec.Command(mkvpropeditPath, args...)
-	var stderr bytes.Buffer
-	cmd.Stderr = &stderr
-
-	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("mkvpropedit chapters failed: %v - %s", err, stderr.String())
-	}
-
-	return nil
-}
-
 // ExtractAudioStream extracts audio from a video file
 func ExtractAudioStream(videoPath, outputPath string) error {
 	args := []string{
 		"-y",
 		"-i", videoPath,
-		"-vn",       // No video
-		"-c:a", "copy", // Copy audio codec
+		"-vn",
+		"-c:a", "copy",
 		outputPath,
 	}
 
@@ -795,8 +532,8 @@ func ExtractVideoStream(videoPath, outputPath string) error {
 	args := []string{
 		"-y",
 		"-i", videoPath,
-		"-an",       // No audio
-		"-c:v", "copy", // Copy video codec
+		"-an",
+		"-c:v", "copy",
 		outputPath,
 	}
 
@@ -837,7 +574,6 @@ func DownloadThumbnail(url, outputPath string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	// Use ffmpeg to download and convert to JPEG
 	args := []string{
 		"-y",
 		"-i", url,
@@ -859,7 +595,6 @@ func DownloadThumbnail(url, outputPath string) error {
 
 // GetFFmpegPath returns path to FFmpeg binary
 func GetFFmpegPath() string {
-	// Check bundled binary first
 	bundledPaths := []string{
 		filepath.Join(getAppDataDir(), "bin", "ffmpeg"),
 		filepath.Join(getAppDataDir(), "bin", "ffmpeg.exe"),
@@ -871,18 +606,15 @@ func GetFFmpegPath() string {
 		}
 	}
 
-	// Check system PATH
 	if path, err := exec.LookPath("ffmpeg"); err == nil {
 		return path
 	}
 
-	// Fallback
 	return "ffmpeg"
 }
 
 // GetFFprobePath returns path to FFprobe binary
 func GetFFprobePath() string {
-	// Check bundled binary first
 	bundledPaths := []string{
 		filepath.Join(getAppDataDir(), "bin", "ffprobe"),
 		filepath.Join(getAppDataDir(), "bin", "ffprobe.exe"),
@@ -894,7 +626,6 @@ func GetFFprobePath() string {
 		}
 	}
 
-	// Check system PATH
 	if path, err := exec.LookPath("ffprobe"); err == nil {
 		return path
 	}
@@ -904,8 +635,7 @@ func GetFFprobePath() string {
 
 // CheckFFmpegInstalled verifies FFmpeg is available
 func CheckFFmpegInstalled() error {
-	ffmpegPath := GetFFmpegPath()
-	cmd := exec.Command(ffmpegPath, "-version")
+	cmd := exec.Command(GetFFmpegPath(), "-version")
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("FFmpeg not found or not executable: %w", err)
 	}
@@ -914,8 +644,7 @@ func CheckFFmpegInstalled() error {
 
 // CheckFFprobeInstalled verifies FFprobe is available
 func CheckFFprobeInstalled() error {
-	ffprobePath := GetFFprobePath()
-	cmd := exec.Command(ffprobePath, "-version")
+	cmd := exec.Command(GetFFprobePath(), "-version")
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("FFprobe not found or not executable: %w", err)
 	}
@@ -932,11 +661,9 @@ func GetFFmpegVersion() (string, error) {
 		return "", err
 	}
 
-	// Parse first line for version
 	output := stdout.String()
 	lines := strings.Split(output, "\n")
 	if len(lines) > 0 {
-		// "ffmpeg version X.X.X ..."
 		return strings.TrimSpace(lines[0]), nil
 	}
 
@@ -946,7 +673,6 @@ func GetFFmpegVersion() (string, error) {
 // Helper functions
 
 func parseFrameRate(fpsStr string) float64 {
-	// Format: "30/1" or "30000/1001"
 	parts := strings.Split(fpsStr, "/")
 	if len(parts) != 2 {
 		return 0
@@ -967,13 +693,10 @@ func fileExists(path string) bool {
 }
 
 func getAppDataDir() string {
-	// Cross-platform app data directory
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
 		return ""
 	}
-
-	// Use ~/.youflac for all platforms
 	return filepath.Join(homeDir, ".youflac")
 }
 
@@ -1007,12 +730,10 @@ func FormatFileSize(bytes int64) string {
 func ValidateOutputPath(outputPath string) error {
 	dir := filepath.Dir(outputPath)
 
-	// Check if directory exists or can be created
 	if err := os.MkdirAll(dir, 0755); err != nil {
 		return fmt.Errorf("cannot create output directory: %w", err)
 	}
 
-	// Check if we can write to the directory
 	testFile := filepath.Join(dir, ".youflac-test")
 	f, err := os.Create(testFile)
 	if err != nil {
@@ -1025,9 +746,7 @@ func ValidateOutputPath(outputPath string) error {
 }
 
 // ReadProgressFromStderr parses FFmpeg progress from stderr
-// This is useful for real-time progress tracking
 func ReadProgressFromStderr(stderr io.Reader, totalDuration float64, callback ProgressCallback) {
-	// FFmpeg outputs progress like: "time=00:01:23.45"
 	timeRegex := regexp.MustCompile(`time=(\d+):(\d+):(\d+)\.(\d+)`)
 
 	buf := make([]byte, 1024)
