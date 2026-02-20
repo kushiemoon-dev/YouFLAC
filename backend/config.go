@@ -24,6 +24,15 @@ type Config struct {
 	SoundEffectsEnabled  bool     `json:"soundEffectsEnabled"` // Play sounds on download complete, error, etc.
 	LyricsEnabled        bool     `json:"lyricsEnabled"`       // Fetch lyrics automatically
 	LyricsEmbedMode      string   `json:"lyricsEmbedMode"`     // "embed", "lrc", "both"
+	LogLevel                string  `json:"logLevel"`                // "debug", "info", "warn", "error"
+	ProxyURL                string  `json:"proxyUrl"`                // "socks5://127.0.0.1:1080" or ""
+	DownloadTimeoutMinutes  float64 `json:"downloadTimeoutMinutes"`  // per-file download timeout (0 = default 10m)
+	PreferredQuality        string  `json:"preferredQuality"`        // "highest", "24bit", "16bit"
+	GenerateM3U8            bool    `json:"generateM3u8"`            // Generate .m3u8 playlist when a batch completes
+	SkipExplicit            bool    `json:"skipExplicit"`            // Skip tracks marked explicit
+	SoundVolume             int     `json:"soundVolume"`             // Sound effects volume 0-100
+	SaveCoverFile           bool    `json:"saveCoverFile"`           // Save cover art as separate .jpg file
+	FirstArtistOnly         bool    `json:"firstArtistOnly"`         // Strip featured artists from artist tag
 }
 
 var defaultConfig = Config{
@@ -37,8 +46,17 @@ var defaultConfig = Config{
 	Theme:               "system",
 	AccentColor:         "pink",
 	SoundEffectsEnabled: true,
-	LyricsEnabled:       false,
-	LyricsEmbedMode:     "lrc",
+	LyricsEnabled:          false,
+	LyricsEmbedMode:        "lrc",
+	LogLevel:               "info",
+	ProxyURL:               "",
+	DownloadTimeoutMinutes: 10,
+	PreferredQuality:       "highest",
+	GenerateM3U8:           false,
+	SkipExplicit:           false,
+	SoundVolume:            70,
+	SaveCoverFile:          false,
+	FirstArtistOnly:        false,
 }
 
 // GetConfigPath returns the path to the config file
@@ -166,6 +184,17 @@ func LoadConfigWithEnv() (*Config, error) {
 		}
 		if len(sources) > 0 {
 			config.AudioSourcePriority = sources
+		}
+	}
+	if v := os.Getenv("LOG_LEVEL"); v != "" {
+		config.LogLevel = v
+	}
+	if v := os.Getenv("PROXY_URL"); v != "" {
+		config.ProxyURL = v
+	}
+	if v := os.Getenv("DOWNLOAD_TIMEOUT_MINUTES"); v != "" {
+		if f, err := strconv.ParseFloat(v, 64); err == nil && f > 0 {
+			config.DownloadTimeoutMinutes = f
 		}
 	}
 
