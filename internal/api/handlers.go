@@ -86,6 +86,22 @@ func (s *Server) handleCancelQueueItem(c *fiber.Ctx) error {
 	return c.JSON(fiber.Map{"success": true})
 }
 
+func (s *Server) handlePauseQueueItem(c *fiber.Ctx) error {
+	id := c.Params("id")
+	if err := s.queue.PauseItem(id); err != nil {
+		return c.Status(400).JSON(fiber.Map{"error": err.Error()})
+	}
+	return c.JSON(fiber.Map{"success": true})
+}
+
+func (s *Server) handleResumeQueueItem(c *fiber.Ctx) error {
+	id := c.Params("id")
+	if err := s.queue.ResumeItem(id); err != nil {
+		return c.Status(400).JSON(fiber.Map{"error": err.Error()})
+	}
+	return c.JSON(fiber.Map{"success": true})
+}
+
 func (s *Server) handleMoveQueueItem(c *fiber.Ctx) error {
 	id := c.Params("id")
 	var body struct {
