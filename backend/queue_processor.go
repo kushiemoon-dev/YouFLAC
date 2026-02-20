@@ -293,6 +293,10 @@ func (q *Queue) processItem(id string) {
 	lucidaService := NewLucidaService(httpClient)
 	orpheusService := NewOrpheusDLService()
 
+	// Diagnostics tracking
+	var sourcesTried []string
+	var songlinkCandidates []AudioCandidate
+
 	// Get audio links via songlink
 	if item.SpotifyURL != "" || item.VideoURL != "" {
 		q.UpdateStatus(id, StatusDownloadingAudio, 45, "Resolving audio sources...")
@@ -304,9 +308,13 @@ func (q *Queue) processItem(id string) {
 		}
 
 		slog.Debug("calling ResolveMusicURL", "url", sourceURL)
+		sourcesTried = append(sourcesTried, "song.link")
 		links, err := ResolveMusicURL(sourceURL)
 		slog.Debug("ResolveMusicURL result", "err", err, "hasLinks", links != nil)
 		if err == nil && links != nil {
+			// Build candidates for diagnostics
+			songlinkCandidates = buildCandidatesFromSongLink(links)
+
 			// Try each audio source in priority order
 			for _, source := range config.AudioSourcePriority {
 				select {
@@ -333,6 +341,7 @@ func (q *Queue) processItem(id string) {
 
 				slog.Debug("trying audio source", "source", source, "url", downloadURL)
 				q.UpdateStatus(id, StatusDownloadingAudio, 50, fmt.Sprintf("Downloading from %s...", source))
+				sourcesTried = append(sourcesTried, source)
 
 				// Service cascade for FLAC download
 				var result *AudioDownloadResult
@@ -391,6 +400,7 @@ func (q *Queue) processItem(id string) {
 	if !audioDownloaded && videoInfo.Artist != "" && videoInfo.Title != "" {
 		slog.Debug("trying TidalHifi search", "artist", videoInfo.Artist, "title", videoInfo.Title)
 		q.UpdateStatus(id, StatusDownloadingAudio, 55, "Searching Tidal for track...")
+		sourcesTried = append(sourcesTried, "tidal_search")
 
 		if tidalHifiService.IsAvailable() {
 			result, err := tidalHifiService.DownloadBySearch(videoInfo.Artist, videoInfo.Title, tempDir)
@@ -417,6 +427,15 @@ func (q *Queue) processItem(id string) {
 
 			err = ExtractAudioFromVideo(videoPath, audioPath)
 			if err != nil {
+				// Populate diagnostics before setting error
+				diag := &MatchDiagnostics{
+					SourcesTried:  sourcesTried,
+					FailureReason: fmt.Sprintf("audio_extraction_failed: %v", err),
+				}
+				q.updateItem(id, func(item *QueueItem) {
+					item.MatchCandidates = songlinkCandidates
+					item.MatchDiagnostics = diag
+				})
 				q.SetItemError(id, fmt.Errorf("failed to extract audio: %w", err))
 				return
 			}
@@ -426,7 +445,15 @@ func (q *Queue) processItem(id string) {
 				item.AudioPath = audioPath
 			})
 		} else {
-			// Audio-only mode but no audio was downloaded from services
+			// Audio-only mode but no audio was downloaded from services — populate diagnostics
+			diag := &MatchDiagnostics{
+				SourcesTried:  sourcesTried,
+				FailureReason: "all_download_attempts_failed",
+			}
+			q.updateItem(id, func(item *QueueItem) {
+				item.MatchCandidates = songlinkCandidates
+				item.MatchDiagnostics = diag
+			})
 			q.SetItemError(id, fmt.Errorf("failed to download audio: no audio source available and video unavailable"))
 			return
 		}
