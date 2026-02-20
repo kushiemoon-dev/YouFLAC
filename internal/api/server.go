@@ -73,11 +73,18 @@ func (s *Server) setupRoutes() {
 	api.Get("/queue", s.handleGetQueue)
 	api.Post("/queue", s.handleAddToQueue)
 	api.Get("/queue/stats", s.handleGetQueueStats)
+	api.Get("/queue/failed/export", s.handleExportFailed)
 	api.Post("/queue/clear", s.handleClearCompleted)
 	api.Post("/queue/retry", s.handleRetryFailed)
+	api.Post("/queue/retry-failed", s.handleRetryFailed)
+	api.Post("/queue/pause-all", s.handlePauseAll)
+	api.Post("/queue/resume-all", s.handleResumeAll)
 	api.Get("/queue/:id", s.handleGetQueueItem)
 	api.Delete("/queue/:id", s.handleRemoveFromQueue)
 	api.Post("/queue/:id/cancel", s.handleCancelQueueItem)
+	api.Post("/queue/:id/pause", s.handlePauseQueueItem)
+	api.Post("/queue/:id/resume", s.handleResumeQueueItem)
+	api.Post("/queue/:id/retry-override", s.handleRetryQueueItemWithOverride)
 	api.Put("/queue/:id/move", s.handleMoveQueueItem)
 
 	// Playlist routes
@@ -119,6 +126,12 @@ func (s *Server) setupRoutes() {
 
 	// Static image serving (for spectrograms, thumbnails)
 	api.Get("/image", s.handleGetImage)
+
+	// Logs
+	api.Get("/logs", s.handleGetLogs)
+
+	// Service status
+	api.Get("/services/status", s.handleServicesStatus)
 
 	// Version
 	api.Get("/version", s.handleGetVersion)

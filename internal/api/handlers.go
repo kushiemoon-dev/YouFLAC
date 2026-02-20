@@ -2,16 +2,18 @@ package api
 
 import (
 	"encoding/base64"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/gofiber/fiber/v2"
 
 	"youflac/backend"
 )
 
-const AppVersion = "1.0.1"
+const AppVersion = "2.0.0"
 
 // Health check
 func (s *Server) handleHealth(c *fiber.Ctx) error {
@@ -25,6 +27,15 @@ func (s *Server) handleGetVersion(c *fiber.Ctx) error {
 	return c.JSON(fiber.Map{"version": AppVersion})
 }
 
+func (s *Server) handleServicesStatus(c *fiber.Ctx) error {
+	proxyURL := ""
+	if s.config != nil {
+		proxyURL = s.config.ProxyURL
+	}
+	statuses := backend.CheckServiceStatus(proxyURL)
+	return c.JSON(statuses)
+}
+
 // ============== Queue Handlers ==============
 
 func (s *Server) handleGetQueue(c *fiber.Ctx) error {
@@ -36,6 +47,10 @@ func (s *Server) handleAddToQueue(c *fiber.Ctx) error {
 	var req backend.DownloadRequest
 	if err := c.BodyParser(&req); err != nil {
 		return c.Status(400).JSON(fiber.Map{"error": "Invalid request body"})
+	}
+
+	if err := backend.ValidateYouTubeURL(req.VideoURL); err != nil {
+		return c.Status(400).JSON(fiber.Map{"error": "Invalid video URL: " + err.Error()})
 	}
 
 	id, err := s.queue.AddToQueue(req)
@@ -71,6 +86,22 @@ func (s *Server) handleCancelQueueItem(c *fiber.Ctx) error {
 	return c.JSON(fiber.Map{"success": true})
 }
 
+func (s *Server) handlePauseQueueItem(c *fiber.Ctx) error {
+	id := c.Params("id")
+	if err := s.queue.PauseItem(id); err != nil {
+		return c.Status(400).JSON(fiber.Map{"error": err.Error()})
+	}
+	return c.JSON(fiber.Map{"success": true})
+}
+
+func (s *Server) handleResumeQueueItem(c *fiber.Ctx) error {
+	id := c.Params("id")
+	if err := s.queue.ResumeItem(id); err != nil {
+		return c.Status(400).JSON(fiber.Map{"error": err.Error()})
+	}
+	return c.JSON(fiber.Map{"success": true})
+}
+
 func (s *Server) handleMoveQueueItem(c *fiber.Ctx) error {
 	id := c.Params("id")
 	var body struct {
@@ -101,6 +132,51 @@ func (s *Server) handleRetryFailed(c *fiber.Ctx) error {
 	return c.JSON(fiber.Map{"retried": count})
 }
 
+func (s *Server) handlePauseAll(c *fiber.Ctx) error {
+	count := s.queue.PauseAll()
+	return c.JSON(fiber.Map{"paused": count})
+}
+
+func (s *Server) handleResumeAll(c *fiber.Ctx) error {
+	count := s.queue.ResumeAll()
+	return c.JSON(fiber.Map{"resumed": count})
+}
+
+func (s *Server) handleRetryQueueItemWithOverride(c *fiber.Ctx) error {
+	id := c.Params("id")
+
+	var req backend.RetryOverrideRequest
+	if err := c.BodyParser(&req); err != nil {
+		return c.Status(400).JSON(fiber.Map{"error": "Invalid request body"})
+	}
+
+	item, err := s.queue.RetryWithOverride(id, req)
+	if err != nil {
+		return c.Status(404).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	return c.JSON(item)
+}
+
+func (s *Server) handleExportFailed(c *fiber.Ctx) error {
+	failed := s.queue.GetFailedItems()
+	if len(failed) == 0 {
+		return c.Status(404).JSON(fiber.Map{"error": "no failed items"})
+	}
+
+	var sb strings.Builder
+	for _, item := range failed {
+		if item.VideoURL != "" {
+			sb.WriteString(item.VideoURL)
+			sb.WriteByte('\n')
+		}
+	}
+
+	c.Set("Content-Type", "text/plain; charset=utf-8")
+	c.Set("Content-Disposition", fmt.Sprintf(`attachment; filename="failed_downloads_%s.txt"`, time.Now().Format("2006-01-02")))
+	return c.SendString(sb.String())
+}
+
 // ============== Playlist Handlers ==============
 
 func (s *Server) handleAddPlaylistToQueue(c *fiber.Ctx) error {
@@ -110,6 +186,10 @@ func (s *Server) handleAddPlaylistToQueue(c *fiber.Ctx) error {
 	}
 	if err := c.BodyParser(&body); err != nil {
 		return c.Status(400).JSON(fiber.Map{"error": "Invalid request body"})
+	}
+
+	if err := backend.ValidateYouTubeURL(body.URL); err != nil {
+		return c.Status(400).JSON(fiber.Map{"error": "Invalid playlist URL: " + err.Error()})
 	}
 
 	quality := body.Quality
@@ -163,6 +243,16 @@ func (s *Server) handleSaveConfig(c *fiber.Ctx) error {
 	var config backend.Config
 	if err := c.BodyParser(&config); err != nil {
 		return c.Status(400).JSON(fiber.Map{"error": "Invalid request body"})
+	}
+
+	if err := backend.ValidateOutputDirectory(config.OutputDirectory); err != nil {
+		return c.Status(400).JSON(fiber.Map{"error": "Invalid output directory: " + err.Error()})
+	}
+
+	if len(config.AudioSourcePriority) > 0 {
+		if err := backend.ValidateAudioSources(config.AudioSourcePriority); err != nil {
+			return c.Status(400).JSON(fiber.Map{"error": "Invalid audio source priority: " + err.Error()})
+		}
 	}
 
 	if err := backend.SaveConfig(&config); err != nil {
@@ -592,6 +682,17 @@ func (s *Server) handleSaveLRCFile(c *fiber.Ctx) error {
 	return c.JSON(fiber.Map{"path": lrcPath})
 }
 
+// ============== Logs Handler ==============
+
+func (s *Server) handleGetLogs(c *fiber.Ctx) error {
+	sinceID := c.QueryInt("since", 0)
+	entries := backend.GetLogs(int64(sinceID))
+	if entries == nil {
+		entries = []backend.LogEntry{}
+	}
+	return c.JSON(entries)
+}
+
 // ============== Image Handler ==============
 
 func (s *Server) handleGetImage(c *fiber.Ctx) error {
@@ -600,24 +701,33 @@ func (s *Server) handleGetImage(c *fiber.Ctx) error {
 		return c.Status(400).JSON(fiber.Map{"error": "path required"})
 	}
 
-	// Security: only allow temp directory or output directory
-	tempDir := os.TempDir()
-	outputDir := s.config.OutputDirectory
-	if outputDir == "" {
-		outputDir = backend.GetDefaultOutputDirectory()
-	}
-
-	if !strings.HasPrefix(path, tempDir) && !strings.HasPrefix(path, outputDir) {
+	// Security: resolve the real path and check it's within allowed directories.
+	// filepath.Abs normalizes ".." traversal sequences before we compare.
+	absPath, err := filepath.Abs(path)
+	if err != nil {
 		return c.Status(403).JSON(fiber.Map{"error": "Access denied"})
 	}
 
-	data, err := os.ReadFile(path)
+	absTemp, _ := filepath.Abs(os.TempDir())
+	absOutput := s.config.OutputDirectory
+	if absOutput == "" {
+		absOutput = backend.GetDefaultOutputDirectory()
+	}
+	absOutput, _ = filepath.Abs(absOutput)
+
+	// Ensure the separator-terminated prefix so "/tmp" doesn't match "/tmpother"
+	if !strings.HasPrefix(absPath, absTemp+string(filepath.Separator)) &&
+		!strings.HasPrefix(absPath, absOutput+string(filepath.Separator)) {
+		return c.Status(403).JSON(fiber.Map{"error": "Access denied"})
+	}
+
+	data, err := os.ReadFile(absPath)
 	if err != nil {
 		return c.Status(404).JSON(fiber.Map{"error": "File not found"})
 	}
 
 	// Return as data URL
-	ext := strings.ToLower(filepath.Ext(path))
+	ext := strings.ToLower(filepath.Ext(absPath))
 	mimeType := "image/png"
 	if ext == ".jpg" || ext == ".jpeg" {
 		mimeType = "image/jpeg"
