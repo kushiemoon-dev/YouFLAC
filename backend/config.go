@@ -28,6 +28,8 @@ type Config struct {
 	ProxyURL                string  `json:"proxyUrl"`                // "socks5://127.0.0.1:1080" or ""
 	DownloadTimeoutMinutes  float64 `json:"downloadTimeoutMinutes"`  // per-file download timeout (0 = default 10m)
 	PreferredQuality        string  `json:"preferredQuality"`        // "highest", "24bit", "16bit"
+	GenerateM3U8            bool    `json:"generateM3u8"`            // Generate .m3u8 playlist when a batch completes
+	SkipExplicit            bool    `json:"skipExplicit"`            // Skip tracks marked explicit
 }
 
 var defaultConfig = Config{
@@ -47,6 +49,8 @@ var defaultConfig = Config{
 	ProxyURL:               "",
 	DownloadTimeoutMinutes: 10,
 	PreferredQuality:       "highest",
+	GenerateM3U8:           false,
+	SkipExplicit:           false,
 }
 
 // GetConfigPath returns the path to the config file
