@@ -61,8 +61,26 @@ type QueueItem struct {
 	// Audio-only fallback (video unavailable)
 	AudioOnly bool `json:"audioOnly,omitempty"`
 
+	// Diagnostics de matching (peuplés si erreur ou match incertain)
+	MatchCandidates  []AudioCandidate  `json:"matchCandidates,omitempty"`
+	MatchDiagnostics *MatchDiagnostics `json:"matchDiagnostics,omitempty"`
+
 	// Cancel channel (not serialized)
 	cancelFunc context.CancelFunc `json:"-"`
+}
+
+// MatchDiagnostics contains diagnostic information about why a match failed
+type MatchDiagnostics struct {
+	SourcesTried  []string `json:"sourcesTried"`  // e.g. ["song.link", "tidal_search"]
+	FailureReason string   `json:"failureReason"` // e.g. "all_download_attempts_failed"
+	BestScore     float64  `json:"bestScore"`
+}
+
+// RetryOverrideRequest allows retrying a failed item with corrected metadata
+type RetryOverrideRequest struct {
+	Artist   string `json:"artist,omitempty"`
+	Title    string `json:"title,omitempty"`
+	MusicURL string `json:"musicUrl,omitempty"` // Direct Spotify/Tidal/Qobuz URL
 }
 
 // DownloadRequest is the input for adding items to queue
@@ -495,6 +513,46 @@ func (q *Queue) RetryFailed() int {
 		}
 	}
 	return retried
+}
+
+// RetryWithOverride resets a failed item to pending with optional metadata overrides
+func (q *Queue) RetryWithOverride(id string, req RetryOverrideRequest) (*QueueItem, error) {
+	q.mutex.Lock()
+
+	var found *QueueItem
+	for i := range q.items {
+		if q.items[i].ID == id {
+			item := &q.items[i]
+			if req.MusicURL != "" {
+				item.SpotifyURL = req.MusicURL
+			}
+			if req.Artist != "" {
+				item.Artist = req.Artist
+			}
+			if req.Title != "" {
+				item.Title = req.Title
+			}
+			item.Status = StatusPending
+			item.Progress = 0
+			item.Error = ""
+			item.Stage = "Waiting... (retry with override)"
+			item.MatchCandidates = nil
+			item.MatchDiagnostics = nil
+			item.cancelFunc = nil
+			cp := *item
+			found = &cp
+			break
+		}
+	}
+
+	q.mutex.Unlock()
+
+	if found == nil {
+		return nil, fmt.Errorf("item not found: %s", id)
+	}
+
+	go q.emit(QueueEvent{Type: "updated", ItemID: id, Item: found})
+	return found, nil
 }
 
 // ClearAll removes all items from the queue
