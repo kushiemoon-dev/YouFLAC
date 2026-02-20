@@ -132,6 +132,22 @@ func (s *Server) handleRetryFailed(c *fiber.Ctx) error {
 	return c.JSON(fiber.Map{"retried": count})
 }
 
+func (s *Server) handleRetryQueueItemWithOverride(c *fiber.Ctx) error {
+	id := c.Params("id")
+
+	var req backend.RetryOverrideRequest
+	if err := c.BodyParser(&req); err != nil {
+		return c.Status(400).JSON(fiber.Map{"error": "Invalid request body"})
+	}
+
+	item, err := s.queue.RetryWithOverride(id, req)
+	if err != nil {
+		return c.Status(404).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	return c.JSON(item)
+}
+
 func (s *Server) handleExportFailed(c *fiber.Ctx) error {
 	failed := s.queue.GetFailedItems()
 	if len(failed) == 0 {

@@ -25,6 +25,18 @@ export interface DownloadRequest {
   quality?: string;
 }
 
+export interface MatchDiagnostics {
+  sourcesTried: string[];
+  failureReason: string;
+  bestScore: number;
+}
+
+export interface RetryOverrideRequest {
+  artist?: string;
+  title?: string;
+  musicUrl?: string;
+}
+
 export interface QueueItem {
   id: string;
   videoUrl: string;
@@ -52,6 +64,8 @@ export interface QueueItem {
   audioSource?: string;
   quality?: string;
   audioOnly?: boolean;
+  matchCandidates?: AudioCandidate[];
+  matchDiagnostics?: MatchDiagnostics;
 }
 
 export interface QueueStats {
@@ -266,6 +280,13 @@ export async function ClearCompleted(): Promise<number> {
 export async function RetryFailed(): Promise<number> {
   const res = await api<{ retried: number }>('/queue/retry', { method: 'POST' });
   return res.retried;
+}
+
+export async function retryWithOverride(id: string, req: RetryOverrideRequest): Promise<QueueItem> {
+  return api<QueueItem>(`/queue/${id}/retry-override`, {
+    method: 'POST',
+    body: JSON.stringify(req),
+  });
 }
 
 export async function ClearQueue(): Promise<void> {
