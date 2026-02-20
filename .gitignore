@@ -42,3 +42,6 @@ Thumbs.db
 # Dev tools
 *.instructions.md
 .ai/
+
+# Git worktrees
+.worktrees/
