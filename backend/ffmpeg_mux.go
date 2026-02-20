@@ -111,40 +111,41 @@ func MuxVideoAudio(videoPath, audioPath, outputPath string, opts MuxOptions) err
 	return MuxVideoAudioWithProgress(videoPath, audioPath, outputPath, opts, nil)
 }
 
-// DetectLeadingSilence returns the duration of silence at the very start of an audio file.
-// Returns 0 if no leading silence is detected or if detection fails.
-func DetectLeadingSilence(filePath string) (float64, error) {
+// detectLeadingSilenceFromStream measures the leading silence in a file's audio stream.
+// streamMap selects the audio stream (e.g. "0:a:0", or "" for default audio).
+// Returns 0 if no leading silence is found or on any error.
+func detectLeadingSilenceFromStream(filePath, streamMap string) float64 {
 	ffmpegPath := GetFFmpegPath()
-	args := []string{
-		"-i", filePath,
-		"-af", "silencedetect=noise=-50dB:d=0.05",
-		"-f", "null",
-		"-",
+	args := []string{"-i", filePath}
+	if streamMap != "" {
+		args = append(args, "-map", streamMap)
 	}
+	args = append(args,
+		"-af", "silencedetect=noise=-50dB:d=0.05",
+		"-f", "null", "-",
+	)
 
 	cmd := exec.Command(ffmpegPath, args...)
 	var stderr bytes.Buffer
 	cmd.Stderr = &stderr
-	cmd.Run() // Ignore exit code; silencedetect output is in stderr
+	cmd.Run() // exit code is irrelevant; output is in stderr
 
 	output := stderr.String()
+	startRe := regexp.MustCompile(`silence_start: ([\d.e+-]+)`)
+	endRe := regexp.MustCompile(`silence_end: ([\d.e+-]+)`)
 
-	silenceStartRe := regexp.MustCompile(`silence_start: ([\d.]+)`)
-	silenceEndRe := regexp.MustCompile(`silence_end: ([\d.]+)`)
-
-	startMatches := silenceStartRe.FindAllStringSubmatch(output, -1)
-	endMatches := silenceEndRe.FindAllStringSubmatch(output, -1)
-
-	if len(startMatches) > 0 && len(endMatches) > 0 {
-		firstStart, err1 := strconv.ParseFloat(startMatches[0][1], 64)
-		firstEnd, err2 := strconv.ParseFloat(endMatches[0][1], 64)
-		// Only trim if silence begins at the very start of the file
-		if err1 == nil && err2 == nil && firstStart < 0.01 {
-			return firstEnd, nil
-		}
+	startMatches := startRe.FindAllStringSubmatch(output, -1)
+	endMatches := endRe.FindAllStringSubmatch(output, -1)
+	if len(startMatches) == 0 || len(endMatches) == 0 {
+		return 0
 	}
 
-	return 0, nil
+	firstStart, err1 := strconv.ParseFloat(startMatches[0][1], 64)
+	firstEnd, err2 := strconv.ParseFloat(endMatches[0][1], 64)
+	if err1 != nil || err2 != nil || firstStart > 0.01 {
+		return 0
+	}
+	return firstEnd
 }
 
 // TrimAudioStart removes the first `duration` seconds from an audio file using
@@ -188,20 +189,44 @@ func MuxVideoAudioWithProgress(videoPath, audioPath, outputPath string, opts Mux
 		progress(0, "Preparing mux")
 	}
 
-	// Detect and trim leading silence in audio to keep A/V in sync.
-	// Tidal/Qobuz FLACs often have a short digital silence at the start
-	// that YouTube's audio track doesn't, causing audible drift.
-	const minSilenceTrimSec = 0.1 // ignore silences shorter than 100 ms
+	// A/V sync correction:
+	// yt-dlp merges AV1+opus into the source mp4. Both streams share the same
+	// leading silence (codec delay + pre-roll). When we replace the YouTube
+	// audio with a Tidal/Qobuz FLAC, the FLAC may have a different amount of
+	// leading silence, causing audible drift.
+	//
+	//   adjust = video_audio_silence − flac_silence
+	//   > 0 → FLAC needs a delay  (itsoffset on audio input)
+	//   < 0 → FLAC has excess silence → trim it
+	const minAdjustSec = 0.05 // ignore differences < 50 ms
+
+	videoAudioSilence := detectLeadingSilenceFromStream(videoPath, "0:a:0")
+	flacSilence := detectLeadingSilenceFromStream(audioPath, "")
+	adjust := videoAudioSilence - flacSilence
+
+	slog.Debug("A/V sync analysis",
+		"video_audio_silence", videoAudioSilence,
+		"flac_silence", flacSilence,
+		"adjust_sec", adjust,
+	)
+
 	effectiveAudioPath := audioPath
-	if leadingSilence, err := DetectLeadingSilence(audioPath); err == nil && leadingSilence > minSilenceTrimSec {
+	var itsOffset float64
+
+	if adjust < -minAdjustSec {
+		// FLAC has more silence than the video audio → trim the excess
 		trimPath := audioPath + ".sync_trimmed.flac"
-		if trimErr := TrimAudioStart(audioPath, trimPath, leadingSilence); trimErr == nil {
-			slog.Info("trimmed leading silence for A/V sync", "duration_sec", leadingSilence, "path", trimPath)
+		if err := TrimAudioStart(audioPath, trimPath, -adjust); err == nil {
+			slog.Info("A/V sync: trimmed FLAC excess silence", "trim_sec", -adjust)
 			defer os.Remove(trimPath)
 			effectiveAudioPath = trimPath
 		} else {
-			slog.Warn("could not trim leading silence, sync may be off", "err", trimErr)
+			slog.Warn("A/V sync: trim failed, proceeding without trim", "err", err)
 		}
+	} else if adjust > minAdjustSec {
+		// FLAC needs to start later → delay it with itsoffset
+		itsOffset = adjust
+		slog.Info("A/V sync: delaying FLAC with itsoffset", "itsoffset_sec", itsOffset)
 	}
 
 	ffmpegPath := GetFFmpegPath()
@@ -214,6 +239,9 @@ func MuxVideoAudioWithProgress(videoPath, audioPath, outputPath string, opts Mux
 	}
 
 	args = append(args, "-i", videoPath)
+	if itsOffset > 0 {
+		args = append(args, "-itsoffset", fmt.Sprintf("%.6f", itsOffset))
+	}
 	args = append(args, "-i", effectiveAudioPath)
 
 	hasCover := opts.CoverArtPath != "" && fileExists(opts.CoverArtPath)
