@@ -80,6 +80,8 @@ func (s *Server) setupRoutes() {
 	api.Get("/queue/:id", s.handleGetQueueItem)
 	api.Delete("/queue/:id", s.handleRemoveFromQueue)
 	api.Post("/queue/:id/cancel", s.handleCancelQueueItem)
+	api.Post("/queue/:id/pause", s.handlePauseQueueItem)
+	api.Post("/queue/:id/resume", s.handleResumeQueueItem)
 	api.Put("/queue/:id/move", s.handleMoveQueueItem)
 
 	// Playlist routes
