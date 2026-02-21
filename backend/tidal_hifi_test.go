@@ -4,7 +4,14 @@ import (
 	"testing"
 )
 
-func TestTidalHifiService_Search(t *testing.T) {
+// These are integration tests that call real external services.
+// They are skipped in short mode (go test -short) and when the service is unavailable.
+
+func TestTidalHifiService_Search_Integration(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping integration test in short mode")
+	}
+
 	service := NewTidalHifiService(nil)
 
 	if !service.IsAvailable() {
@@ -21,7 +28,11 @@ func TestTidalHifiService_Search(t *testing.T) {
 	t.Logf("Album: %s, ISRC: %s, Duration: %ds", track.Album.Title, track.ISRC, track.Duration)
 }
 
-func TestTidalHifiService_GetStreamURL(t *testing.T) {
+func TestTidalHifiService_GetStreamURL_Integration(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping integration test in short mode")
+	}
+
 	service := NewTidalHifiService(nil)
 
 	if !service.IsAvailable() {
@@ -39,7 +50,7 @@ func TestTidalHifiService_GetStreamURL(t *testing.T) {
 	t.Logf("Stream URL: %s", streamURL[:100]+"...")
 }
 
-func TestTidalHifiService_DownloadBySearch(t *testing.T) {
+func TestTidalHifiService_DownloadBySearch_Integration(t *testing.T) {
 	if testing.Short() {
 		t.Skip("Skipping download test in short mode")
 	}
