@@ -28,7 +28,7 @@ export function Home() {
         subtitle="YouTube Video + Lossless FLAC = Perfect MKV"
       />
 
-      <div className="px-8 pb-8 space-y-8">
+      <div className="px-4 md:px-8 pb-8 space-y-8">
         {/* URL Input Section */}
         <section className="animate-slide-up" style={{ animationDelay: '0.1s', animationFillMode: 'backwards' }}>
           <URLInput onAdd={handleAdd} />
@@ -52,7 +52,7 @@ export function Home() {
         {/* Stats bar */}
         {stats && stats.total > 0 && (
           <section
-            className="fixed bottom-0 left-[64px] right-0 p-4 glass animate-slide-up"
+            className="fixed bottom-0 left-0 md:left-[64px] right-0 p-4 glass animate-slide-up"
             style={{ animationDelay: '0.3s' }}
           >
             <div className="flex items-center justify-between max-w-4xl mx-auto">

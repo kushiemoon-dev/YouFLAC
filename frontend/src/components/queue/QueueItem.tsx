@@ -49,7 +49,18 @@ interface QueueItemProps {
   onOpenFolder?: (path: string) => void;
 }
 
-function getStatusBadge(status: QueueStatus): { label: string; className: string } {
+const SkipIcon = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <polygon points="5 4 15 12 5 20 5 4" />
+    <line x1="19" y1="5" x2="19" y2="19" />
+  </svg>
+);
+
+function getStatusBadge(status: QueueStatus, stage?: string): { label: string; className: string } {
+  // Detect skipped items
+  if (status === 'complete' && stage?.includes('Skipped')) {
+    return { label: 'Skipped', className: 'badge-neutral' };
+  }
   switch (status) {
     case 'pending':
       return { label: 'Pending', className: 'badge-neutral' };
@@ -69,6 +80,8 @@ function getStatusBadge(status: QueueStatus): { label: string; className: string
       return { label: 'Error', className: 'badge-error' };
     case 'cancelled':
       return { label: 'Cancelled', className: 'badge-neutral' };
+    case 'paused':
+      return { label: 'Paused', className: 'badge-neutral' };
     default:
       return { label: 'Unknown', className: 'badge-neutral' };
   }
@@ -83,7 +96,10 @@ function formatDuration(seconds: number): string {
 export function QueueItem({ item, onCancel, onRemove, onRetry, onOpenFolder }: QueueItemProps) {
   const status = item.status as QueueStatus;
   const isProcessing = !['complete', 'error', 'cancelled', 'pending'].includes(status);
-  const badge = getStatusBadge(status);
+  const badge = getStatusBadge(status, item.stage);
+  const isSkipped = status === 'complete' && item.stage?.includes('Skipped');
+  const [showDiagnostics, setShowDiagnostics] = useState(false);
+  const hasDiagnostics = item.matchDiagnostics || (item.matchCandidates && item.matchCandidates.length > 0);
   const [showEditModal, setShowEditModal] = useState(false);
 
   function handleRetryOverride(id: string, override: RetryOverrideRequest) {
@@ -124,7 +140,7 @@ export function QueueItem({ item, onCancel, onRemove, onRetry, onOpenFolder }: Q
             <span
               className="absolute bottom-1 right-1 text-[10px] font-mono px-1 rounded"
               style={{
-                background: 'rgba(0,0,0,0.8)',
+                background: 'var(--color-overlay-heavy)',
                 color: 'var(--color-text-primary)'
               }}
             >
@@ -153,7 +169,17 @@ export function QueueItem({ item, onCancel, onRemove, onRetry, onOpenFolder }: Q
               </p>
             </div>
             <div className="flex items-center gap-2 flex-shrink-0">
-              <span className={`badge ${badge.className}`}>
+              {item.explicit && (
+                <span
+                  className="badge text-[10px] font-bold"
+                  style={{ background: 'var(--color-warning)', color: 'var(--color-bg-primary)' }}
+                  title="Explicit content"
+                >
+                  E
+                </span>
+              )}
+              <span className={`badge ${badge.className} flex items-center gap-1`}>
+                {isSkipped && <SkipIcon />}
                 {badge.label}
               </span>
             </div>
@@ -199,6 +225,12 @@ export function QueueItem({ item, onCancel, onRemove, onRetry, onOpenFolder }: Q
                   {item.audioSource}
                 </span>
               )}
+              {/* Actual quality */}
+              {item.actualQuality && (
+                <span className="badge badge-neutral text-[10px]">
+                  {item.actualQuality}
+                </span>
+              )}
               {/* Match confidence */}
               {item.matchConfidence && (
                 <span
@@ -207,6 +239,16 @@ export function QueueItem({ item, onCancel, onRemove, onRetry, onOpenFolder }: Q
                 >
                   {item.matchScore}% match
                 </span>
+              )}
+              {/* Diagnostics toggle */}
+              {hasDiagnostics && ['complete', 'error'].includes(status) && (
+                <button
+                  className="text-[10px] underline cursor-pointer"
+                  style={{ color: 'var(--color-text-tertiary)' }}
+                  onClick={() => setShowDiagnostics(!showDiagnostics)}
+                >
+                  {showDiagnostics ? 'hide details' : 'details'}
+                </button>
               )}
             </div>
 
@@ -270,6 +312,41 @@ export function QueueItem({ item, onCancel, onRemove, onRetry, onOpenFolder }: Q
           </div>
         </div>
       </div>
+
+      {/* Diagnostics panel */}
+      {showDiagnostics && hasDiagnostics && (
+        <div
+          className="mt-3 pt-3 text-xs space-y-1.5"
+          style={{ borderTop: '1px solid var(--color-border-subtle)', color: 'var(--color-text-tertiary)' }}
+        >
+          {item.matchDiagnostics?.sourcesTried && (
+            <div>
+              <span className="font-medium">Sources tried: </span>
+              {item.matchDiagnostics.sourcesTried.join(' → ')}
+            </div>
+          )}
+          {item.matchDiagnostics?.failureReason && (
+            <div>
+              <span className="font-medium">Failure: </span>
+              {item.matchDiagnostics.failureReason}
+            </div>
+          )}
+          {item.matchCandidates && item.matchCandidates.length > 0 && (
+            <div>
+              <span className="font-medium">Candidates ({item.matchCandidates.length}):</span>
+              <div className="mt-1 space-y-0.5 ml-2">
+                {item.matchCandidates.map((c, i) => (
+                  <div key={i} className="flex items-center gap-2">
+                    <span className="badge badge-neutral text-[9px]">{c.platform}</span>
+                    <span className="truncate">{c.artist} - {c.title}</span>
+                    {c.quality && <span className="text-[9px] opacity-60">{c.quality}</span>}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
     </div>
 
     {showEditModal && (

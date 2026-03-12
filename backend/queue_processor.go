@@ -380,15 +380,25 @@ func (q *Queue) processItem(id string) {
 				if result != nil {
 					actualQuality := result.Track.Quality
 					slog.Info("FLAC downloaded", "source", source, "path", result.FilePath, "quality", actualQuality)
+
+					// Quality downgrade check
+					if actualQuality != "" && isQualityDowngrade(config.PreferredQuality, actualQuality) {
+						if !config.AutoQualityFallback {
+							slog.Warn("quality downgrade rejected, trying next source", "requested", config.PreferredQuality, "actual", actualQuality, "source", source)
+							continue
+						}
+						slog.Warn("quality downgraded (auto-fallback)", "requested", config.PreferredQuality, "actual", actualQuality, "source", source)
+					}
+
 					audioDownloaded = true
 					audioPath = result.FilePath
-					if actualQuality != "" && isQualityDowngrade(config.PreferredQuality, actualQuality) {
-						slog.Warn("quality downgraded", "requested", config.PreferredQuality, "actual", actualQuality, "source", source)
-					}
 					q.updateItem(id, func(item *QueueItem) {
 						item.AudioSource = source
 						item.AudioPath = audioPath
 						item.ActualQuality = actualQuality
+						if result.Track != nil && result.Track.Explicit {
+							item.Explicit = true
+						}
 					})
 					break
 				}
