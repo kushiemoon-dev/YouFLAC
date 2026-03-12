@@ -45,6 +45,16 @@ const InfoIcon = () => (
   </svg>
 );
 
+const ConverterIcon = () => (
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <polyline points="16 3 21 3 21 8" />
+    <line x1="4" y1="20" x2="21" y2="3" />
+    <polyline points="21 16 21 21 16 21" />
+    <line x1="15" y1="15" x2="21" y2="21" />
+    <line x1="4" y1="4" x2="9" y2="9" />
+  </svg>
+);
+
 const HistoryIcon = () => (
   <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <circle cx="12" cy="12" r="10" />
@@ -59,6 +69,15 @@ interface SidebarProps {
 
 export function Sidebar({ activePage, onNavigate }: SidebarProps) {
   const [queueCount, setQueueCount] = useState(0);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 767px)');
+    setIsMobile(mq.matches);
+    const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches);
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
+  }, []);
 
   // Poll queue stats every 3s for badge count
   useEffect(() => {
@@ -72,18 +91,55 @@ export function Sidebar({ activePage, onNavigate }: SidebarProps) {
     return () => clearInterval(timer);
   }, []);
 
-  const navItems: { id: Page | 'search'; icon: React.FC; label: string; targetPage: Page }[] = [
-    { id: 'home', icon: HomeIcon, label: 'Home', targetPage: 'home' },
-    { id: 'search', icon: SearchIcon, label: 'Search', targetPage: 'home' },
-    { id: 'history', icon: HistoryIcon, label: 'History', targetPage: 'history' },
-    { id: 'files', icon: FolderIcon, label: 'Files', targetPage: 'files' },
+  const navItems: { id: Page | 'search'; icon: React.FC; label: string; targetPage: Page; iconClass: string }[] = [
+    { id: 'home', icon: HomeIcon, label: 'Home', targetPage: 'home', iconClass: 'icon-home' },
+    { id: 'search', icon: SearchIcon, label: 'Search', targetPage: 'home', iconClass: 'icon-search' },
+    { id: 'history', icon: HistoryIcon, label: 'History', targetPage: 'history', iconClass: 'icon-history' },
+    { id: 'files', icon: FolderIcon, label: 'Files', targetPage: 'files', iconClass: 'icon-files' },
+    { id: 'converter', icon: ConverterIcon, label: 'Converter', targetPage: 'converter', iconClass: 'icon-converter' },
   ];
 
-  const bottomItems: { id: Page; icon: React.FC; label: string }[] = [
-    { id: 'terminal', icon: TerminalIcon, label: 'Terminal' },
-    { id: 'settings', icon: SettingsIcon, label: 'Settings' },
-    { id: 'about', icon: InfoIcon, label: 'About' },
+  const bottomItems: { id: Page; icon: React.FC; label: string; iconClass: string }[] = [
+    { id: 'terminal', icon: TerminalIcon, label: 'Terminal', iconClass: 'icon-terminal' },
+    { id: 'settings', icon: SettingsIcon, label: 'Settings', iconClass: 'icon-settings' },
+    { id: 'about', icon: InfoIcon, label: 'About', iconClass: 'icon-about' },
   ];
+
+  const mobileItems = [
+    ...navItems,
+    { id: 'settings' as const, icon: SettingsIcon, label: 'Settings', targetPage: 'settings' as Page },
+  ];
+
+  if (isMobile) {
+    return (
+      <nav
+        className="fixed bottom-0 left-0 right-0 z-40 flex items-center justify-around h-14"
+        style={{
+          background: 'var(--color-bg-secondary)',
+          borderTop: '1px solid var(--color-border-subtle)',
+        }}
+      >
+        {mobileItems.map((item) => {
+          const isActive = item.id === 'search'
+            ? false
+            : activePage === item.targetPage;
+          return (
+            <button
+              key={item.id}
+              onClick={() => onNavigate(item.targetPage)}
+              className="sidebar-item"
+              style={{ width: 40, height: 40 }}
+              aria-label={item.label}
+              aria-current={isActive ? 'page' : undefined}
+              data-active={isActive}
+            >
+              <item.icon />
+            </button>
+          );
+        })}
+      </nav>
+    );
+  }
 
   return (
     <aside
@@ -98,7 +154,7 @@ export function Sidebar({ activePage, onNavigate }: SidebarProps) {
         <div
           className="w-10 h-10 rounded-xl flex items-center justify-center"
           style={{
-            background: 'linear-gradient(135deg, var(--color-accent) 0%, #a855f7 100%)'
+            background: 'linear-gradient(135deg, var(--color-accent) 0%, var(--color-accent-hover) 100%)'
           }}
         >
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
@@ -132,7 +188,7 @@ export function Sidebar({ activePage, onNavigate }: SidebarProps) {
               data-active={isActive}
             >
               <div className="relative">
-                <item.icon />
+                <span className={`icon-anim ${item.iconClass}`}><item.icon /></span>
                 {/* Badge count on Home icon */}
                 {item.id === 'home' && queueCount > 0 && (
                   <span
@@ -163,7 +219,7 @@ export function Sidebar({ activePage, onNavigate }: SidebarProps) {
             aria-current={activePage === item.id ? 'page' : undefined}
             data-active={activePage === item.id}
           >
-            <item.icon />
+            <span className={`icon-anim ${item.iconClass}`}><item.icon /></span>
           </button>
         ))}
       </div>

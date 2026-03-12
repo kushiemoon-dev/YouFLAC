@@ -33,6 +33,9 @@ type Config struct {
 	SoundVolume             int     `json:"soundVolume"`             // Sound effects volume 0-100
 	SaveCoverFile           bool    `json:"saveCoverFile"`           // Save cover art as separate .jpg file
 	FirstArtistOnly         bool    `json:"firstArtistOnly"`         // Strip featured artists from artist tag
+	ArtistSeparator         string  `json:"artistSeparator"`         // Separator for multi-artist names ("; ", ", ", " & ")
+	AutoQualityFallback     bool    `json:"autoQualityFallback"`     // Auto-retry with lower quality if preferred unavailable
+	SearchResultsLimit      int     `json:"searchResultsLimit"`      // Max YouTube search results (default 10)
 }
 
 var defaultConfig = Config{
@@ -57,6 +60,9 @@ var defaultConfig = Config{
 	SoundVolume:            70,
 	SaveCoverFile:          false,
 	FirstArtistOnly:        false,
+	ArtistSeparator:        "; ",
+	AutoQualityFallback:    true,
+	SearchResultsLimit:     10,
 }
 
 // GetConfigPath returns the path to the config file
@@ -205,11 +211,14 @@ func LoadConfigWithEnv() (*Config, error) {
 func resolveNamingTemplate(template string) string {
 	// Map of template names to actual templates
 	templates := map[string]string{
-		"jellyfin": "{artist}/{title}/{title}",
-		"plex":     "{artist}/{title}",
-		"flat":     "{artist} - {title}",
-		"album":    "{artist}/{album}/{title}",
-		"year":     "{year}/{artist} - {title}",
+		"jellyfin":     "{artist}/{title}/{title}",
+		"plex":         "{artist}/{title}",
+		"flat":         "{artist} - {title}",
+		"album":        "{artist}/{album}/{title}",
+		"year":         "{year}/{artist} - {title}",
+		"album tracks": "{artist} - {album}/{track} {title}",
+		"genre":        "{genre}/{artist}/{title}",
+		"date":         "{date}/{artist} - {title}",
 	}
 
 	// Check if it's a template name
