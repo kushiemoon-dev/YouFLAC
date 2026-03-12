@@ -103,6 +103,9 @@ func (s *Server) setupRoutes() {
 	api.Post("/history/clear", s.handleClearHistory)
 	api.Post("/history/:id/redownload", s.handleRedownloadFromHistory)
 
+	// Search routes
+	api.Get("/search", s.handleSearch)
+
 	// Video/URL routes
 	api.Post("/video/parse", s.handleParseURL)
 	api.Get("/video/info", s.handleGetVideoInfo)
@@ -113,6 +116,10 @@ func (s *Server) setupRoutes() {
 	api.Get("/files/playlists", s.handleGetPlaylistFolders)
 	api.Post("/files/reorganize", s.handleReorganizePlaylist)
 	api.Post("/files/flatten", s.handleFlattenPlaylist)
+
+	// Converter routes
+	api.Post("/convert", s.handleConvert)
+	api.Get("/convert/formats", s.handleGetConvertFormats)
 
 	// Analyzer routes
 	api.Post("/analyze", s.handleAnalyzeAudio)

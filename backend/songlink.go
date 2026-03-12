@@ -87,6 +87,18 @@ var (
 	}
 )
 
+// songLinkCache caches resolved URLs to avoid redundant API calls
+type songLinkCacheEntry struct {
+	info      *SongLinkTrackInfo
+	cachedAt  time.Time
+}
+
+var (
+	slCache    = make(map[string]songLinkCacheEntry)
+	slCacheMu  sync.RWMutex
+	slCacheTTL = 30 * time.Minute
+)
+
 // Spotify URL patterns
 var (
 	spotifyTrackRegex    = regexp.MustCompile(`spotify\.com/track/([a-zA-Z0-9]+)`)
@@ -140,6 +152,14 @@ func waitForRateLimit() {
 // ResolveMusicURL converts any music platform URL to cross-platform URLs
 // Supports: Spotify, Tidal, Qobuz, Apple Music, Deezer, YouTube Music, SoundCloud
 func ResolveMusicURL(musicURL string) (*SongLinkTrackInfo, error) {
+	// Check cache first
+	slCacheMu.RLock()
+	if entry, ok := slCache[musicURL]; ok && time.Since(entry.cachedAt) < slCacheTTL {
+		slCacheMu.RUnlock()
+		return entry.info, nil
+	}
+	slCacheMu.RUnlock()
+
 	waitForRateLimit()
 
 	// Build API URL
@@ -176,7 +196,14 @@ func ResolveMusicURL(musicURL string) (*SongLinkTrackInfo, error) {
 		return nil, fmt.Errorf("failed to parse response: %w", err)
 	}
 
-	return parseSongLinkResponse(&response), nil
+	result := parseSongLinkResponse(&response)
+
+	// Store in cache
+	slCacheMu.Lock()
+	slCache[musicURL] = songLinkCacheEntry{info: result, cachedAt: time.Now()}
+	slCacheMu.Unlock()
+
+	return result, nil
 }
 
 // parseSongLinkResponse extracts useful info from the API response
