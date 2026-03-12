@@ -8,7 +8,7 @@ const LEVEL_COLORS: Record<string, string> = {
   WARN: 'var(--color-warning)',
   WARNING: 'var(--color-warning)',
   INFO: 'var(--color-text-secondary)',
-  DEBUG: '#a78bfa', // purple
+  DEBUG: 'var(--color-accent)',
 };
 
 function levelColor(level: string): string {
@@ -57,7 +57,7 @@ export function Terminal() {
     <div className="min-h-screen">
       <Header title="Terminal" subtitle="Application logs" />
 
-      <div className="px-8 pb-8">
+      <div className="px-4 md:px-8 pb-8">
         {/* Toolbar */}
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-3">

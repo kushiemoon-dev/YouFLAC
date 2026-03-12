@@ -25,14 +25,14 @@ export function About() {
     <div className="min-h-screen">
       <Header title="About" subtitle="Application information" />
 
-      <div className="px-8 pb-8 max-w-2xl">
+      <div className="px-4 md:px-8 pb-8 max-w-2xl">
         <div className="card p-8 text-center mb-8 animate-slide-up">
           {/* Logo */}
           <div className="mb-6">
             <div
               className="w-20 h-20 rounded-2xl mx-auto flex items-center justify-center relative"
               style={{
-                background: 'linear-gradient(135deg, var(--color-accent) 0%, #a855f7 100%)'
+                background: 'linear-gradient(135deg, var(--color-accent) 0%, var(--color-accent-hover) 100%)'
               }}
             >
               <svg width="48" height="48" viewBox="0 0 24 24" fill="none">

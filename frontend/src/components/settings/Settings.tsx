@@ -5,6 +5,7 @@ import { Dropdown } from '../ui/Dropdown';
 import { ColorPicker } from '../ui/ColorPicker';
 import { useSettings } from '../../hooks/useSettings';
 import { applyAccentColor } from '../../hooks/useAccentColor';
+import { applyTheme } from '../../hooks/useTheme';
 import { setSoundEnabled } from '../../hooks/useSoundEffects';
 import { AccentColor } from '../../types';
 import * as Api from '../../lib/api';
@@ -45,10 +46,13 @@ const audioQualityOptions = [
 
 const namingTemplateOptions = [
   { value: 'jellyfin', label: 'Jellyfin', description: '{artist}/{title}/{title}' },
-  { value: 'plex', label: 'Plex', description: '{artist} - {title}' },
+  { value: 'plex', label: 'Plex', description: '{artist}/{title}' },
   { value: 'flat', label: 'Flat', description: '{artist} - {title}' },
   { value: 'album', label: 'Album', description: '{artist}/{album}/{title}' },
-  { value: 'year', label: 'Year', description: '{year}/{artist}/{title}' },
+  { value: 'year', label: 'Year', description: '{year}/{artist} - {title}' },
+  { value: 'album tracks', label: 'Album Tracks', description: '{artist} - {album}/{track} {title}' },
+  { value: 'genre', label: 'Genre', description: '{genre}/{artist}/{title}' },
+  { value: 'date', label: 'Date', description: '{date}/{artist} - {title}' },
 ];
 
 const themeOptions = [
@@ -79,6 +83,16 @@ const logLevelOptions = [
   { value: 'info', label: 'Info', description: 'Normal operation logs' },
   { value: 'warn', label: 'Warn', description: 'Warnings and errors only' },
   { value: 'error', label: 'Error', description: 'Errors only' },
+];
+
+type SettingsTab = 'general' | 'audio' | 'naming' | 'ui' | 'advanced';
+
+const tabs: { id: SettingsTab; label: string }[] = [
+  { id: 'general', label: 'General' },
+  { id: 'audio', label: 'Audio' },
+  { id: 'naming', label: 'Naming' },
+  { id: 'ui', label: 'UI' },
+  { id: 'advanced', label: 'Advanced' },
 ];
 
 function SectionTitle({ title }: { title: string }) {
@@ -112,9 +126,10 @@ export function Settings() {
   const { config, loading, saving, saveConfig, updateField } = useSettings();
   const [defaultPath, setDefaultPath] = useState('');
   const [hasChanges, setHasChanges] = useState(false);
+  const [activeTab, setActiveTab] = useState<SettingsTab>('general');
 
   useEffect(() => {
-    Api.GetDefaultOutputDirectory().then(setDefaultPath).catch(console.error);
+    Api.GetDefaultOutputDirectory().then(setDefaultPath).catch(() => {});
   }, []);
 
   if (loading || !config) {
@@ -146,229 +161,295 @@ export function Settings() {
     <div className="min-h-screen pb-24">
       <Header title="Settings" subtitle="Configure your preferences" />
 
-      <div className="px-8 pb-8 max-w-2xl">
+      {/* Tabs */}
+      <div className="px-4 md:px-8 mb-6">
+        <div className="flex gap-1 p-1 rounded-lg overflow-x-auto" style={{ background: 'var(--color-bg-secondary)' }}>
+          {tabs.map((tab) => (
+            <button
+              key={tab.id}
+              className={`px-4 py-2 text-sm rounded-md transition-colors md:flex-1 flex-shrink-0 whitespace-nowrap ${activeTab === tab.id ? 'font-medium' : ''}`}
+              style={{
+                background: activeTab === tab.id ? 'var(--color-bg-tertiary)' : 'transparent',
+                color: activeTab === tab.id ? 'var(--color-text-primary)' : 'var(--color-text-secondary)',
+              }}
+              onClick={() => setActiveTab(tab.id)}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+      </div>
 
-        {/* ── Appearance ── */}
-        <section className="mb-8">
-          <SectionTitle title="Appearance" />
-          <div className="space-y-1">
-            <SettingRow label="Theme">
-              <div style={{ minWidth: 160 }}>
-                <Dropdown value={config.theme} options={themeOptions} onChange={(v) => handleChange('theme', v)} />
-              </div>
-            </SettingRow>
-            <SettingRow label="Accent Color">
-              <ColorPicker
-                value={(config.accentColor || 'pink') as AccentColor}
-                onChange={(color) => {
-                  handleChange('accentColor', color);
-                  applyAccentColor(color);
-                }}
-              />
-            </SettingRow>
-          </div>
-        </section>
+      <div className="px-4 md:px-8 pb-8 max-w-2xl">
 
-        {/* ── Downloads ── */}
-        <section className="mb-8">
-          <SectionTitle title="Downloads" />
-          <div className="space-y-1">
-            <SettingRow label="Output Directory">
-              <div className="flex gap-2" style={{ minWidth: 280 }}>
-                <input
-                  type="text"
-                  value={config.outputDirectory || defaultPath}
-                  onChange={(e) => handleChange('outputDirectory', e.target.value)}
-                  className="flex-1"
-                  placeholder={defaultPath}
-                />
-                <button className="btn-secondary flex items-center gap-1.5">
-                  <FolderIcon />
-                  Browse
-                </button>
+        {/* ── General Tab ── */}
+        {activeTab === 'general' && (
+          <>
+            <section className="mb-8">
+              <SectionTitle title="Downloads" />
+              <div className="space-y-1">
+                <SettingRow label="Output Directory">
+                  <div className="flex gap-2" style={{ minWidth: 280 }}>
+                    <input
+                      type="text"
+                      value={config.outputDirectory || defaultPath}
+                      onChange={(e) => handleChange('outputDirectory', e.target.value)}
+                      className="flex-1"
+                      placeholder={defaultPath}
+                    />
+                    <button className="btn-secondary flex items-center gap-1.5">
+                      <FolderIcon />
+                      Browse
+                    </button>
+                  </div>
+                </SettingRow>
+                <SettingRow label="Concurrent Downloads">
+                  <div className="flex items-center gap-3" style={{ minWidth: 140 }}>
+                    <input
+                      type="range"
+                      min="1"
+                      max="5"
+                      value={config.concurrentDownloads}
+                      onChange={(e) => handleChange('concurrentDownloads', parseInt(e.target.value))}
+                      className="flex-1"
+                      style={{ accentColor: 'var(--color-accent)' }}
+                    />
+                    <span className="w-6 text-center font-mono" style={{ color: 'var(--color-text-primary)' }}>
+                      {config.concurrentDownloads}
+                    </span>
+                  </div>
+                </SettingRow>
+                <SettingRow label="YouTube Cookies (Anti-Bot)" description="Use browser cookies to bypass bot detection">
+                  <div style={{ minWidth: 160 }}>
+                    <Dropdown value={config.cookiesBrowser || ''} options={cookiesBrowserOptions} onChange={(v) => handleChange('cookiesBrowser', v)} />
+                  </div>
+                </SettingRow>
               </div>
-            </SettingRow>
-            <SettingRow label="Video Quality">
-              <div style={{ minWidth: 160 }}>
-                <Dropdown value={config.videoQuality} options={videoQualityOptions} onChange={(v) => handleChange('videoQuality', v)} />
-              </div>
-            </SettingRow>
-            <SettingRow label="Concurrent Downloads">
-              <div className="flex items-center gap-3" style={{ minWidth: 140 }}>
-                <input
-                  type="range"
-                  min="1"
-                  max="5"
-                  value={config.concurrentDownloads}
-                  onChange={(e) => handleChange('concurrentDownloads', parseInt(e.target.value))}
-                  className="flex-1"
-                  style={{ accentColor: 'var(--color-accent)' }}
-                />
-                <span className="w-6 text-center font-mono" style={{ color: 'var(--color-text-primary)' }}>
-                  {config.concurrentDownloads}
-                </span>
-              </div>
-            </SettingRow>
-            <SettingRow label="Folder Structure" description={`Preview: ${config.outputDirectory || defaultPath}/${namingTemplateOptions.find(o => o.value === config.namingTemplate)?.description || '{artist}/{title}'}`}>
-              <div style={{ minWidth: 160 }}>
-                <Dropdown value={config.namingTemplate} options={namingTemplateOptions} onChange={(v) => handleChange('namingTemplate', v)} />
-              </div>
-            </SettingRow>
-            <SettingRow label="YouTube Cookies (Anti-Bot)" description="Use browser cookies to bypass bot detection">
-              <div style={{ minWidth: 160 }}>
-                <Dropdown value={config.cookiesBrowser || ''} options={cookiesBrowserOptions} onChange={(v) => handleChange('cookiesBrowser', v)} />
-              </div>
-            </SettingRow>
-          </div>
-        </section>
+            </section>
 
-        {/* ── Metadata ── */}
-        <section className="mb-8">
-          <SectionTitle title="Metadata" />
-          <div className="space-y-1">
-            <SettingRow label="Generate NFO Files" description="Create metadata files for Jellyfin/Kodi">
-              <Toggle checked={config.generateNfo} onChange={(v) => handleChange('generateNfo', v)} />
-            </SettingRow>
-            <SettingRow label="Embed Cover Art" description="Include album art in MKV files">
-              <Toggle checked={config.embedCoverArt} onChange={(v) => handleChange('embedCoverArt', v)} />
-            </SettingRow>
-            <SettingRow label="Save Cover File" description="Also save album art as a separate .jpg file">
-              <Toggle checked={config.saveCoverFile ?? false} onChange={(v) => handleChange('saveCoverFile', v)} />
-            </SettingRow>
-            <SettingRow label="First Artist Only" description="Strip featured artists from artist tag (e.g. &quot;Artist feat. X&quot; → &quot;Artist&quot;)">
-              <Toggle checked={config.firstArtistOnly ?? false} onChange={(v) => handleChange('firstArtistOnly', v)} />
-            </SettingRow>
-            <SettingRow label="Audio Source Priority" description="Drag to reorder">
-              <div className="flex gap-2">
-                {(config.audioSourcePriority || ['tidal', 'qobuz', 'amazon']).map((source, index) => (
-                  <span key={source} className="badge badge-neutral cursor-move">
-                    {index + 1}. {source}
-                  </span>
-                ))}
+            <section className="mb-8">
+              <SectionTitle title="Metadata" />
+              <div className="space-y-1">
+                <SettingRow label="Generate NFO Files" description="Create metadata files for Jellyfin/Kodi">
+                  <Toggle checked={config.generateNfo} onChange={(v) => handleChange('generateNfo', v)} />
+                </SettingRow>
+                <SettingRow label="Embed Cover Art" description="Include album art in MKV files">
+                  <Toggle checked={config.embedCoverArt} onChange={(v) => handleChange('embedCoverArt', v)} />
+                </SettingRow>
+                <SettingRow label="Save Cover File" description="Also save album art as a separate .jpg file">
+                  <Toggle checked={config.saveCoverFile ?? false} onChange={(v) => handleChange('saveCoverFile', v)} />
+                </SettingRow>
+                <SettingRow label="Generate M3U8" description="Create an .m3u8 playlist file when a batch completes">
+                  <Toggle checked={config.generateM3u8 ?? false} onChange={(v) => handleChange('generateM3u8', v)} />
+                </SettingRow>
               </div>
-            </SettingRow>
-          </div>
-        </section>
+            </section>
+          </>
+        )}
 
-        {/* ── Quality ── */}
-        <section className="mb-8">
-          <SectionTitle title="Quality" />
-          <div className="space-y-1">
-            <SettingRow label="Preferred Audio Quality" description="Target quality tier for lossless downloads">
-              <div style={{ minWidth: 160 }}>
-                <Dropdown value={config.preferredQuality || 'highest'} options={audioQualityOptions} onChange={(v) => handleChange('preferredQuality', v)} />
+        {/* ── Audio Tab ── */}
+        {activeTab === 'audio' && (
+          <>
+            <section className="mb-8">
+              <SectionTitle title="Quality" />
+              <div className="space-y-1">
+                <SettingRow label="Video Quality">
+                  <div style={{ minWidth: 160 }}>
+                    <Dropdown value={config.videoQuality} options={videoQualityOptions} onChange={(v) => handleChange('videoQuality', v)} />
+                  </div>
+                </SettingRow>
+                <SettingRow label="Preferred Audio Quality" description="Target quality tier for lossless downloads">
+                  <div style={{ minWidth: 160 }}>
+                    <Dropdown value={config.preferredQuality || 'highest'} options={audioQualityOptions} onChange={(v) => handleChange('preferredQuality', v)} />
+                  </div>
+                </SettingRow>
+                <SettingRow label="Auto Quality Fallback" description="Accept lower quality if preferred tier is unavailable">
+                  <Toggle checked={config.autoQualityFallback ?? true} onChange={(v) => handleChange('autoQualityFallback', v)} />
+                </SettingRow>
+                <SettingRow label="Skip Explicit Tracks" description="Skip tracks flagged as explicit content">
+                  <Toggle checked={config.skipExplicit ?? false} onChange={(v) => handleChange('skipExplicit', v)} />
+                </SettingRow>
               </div>
-            </SettingRow>
-            <SettingRow label="Skip Explicit Tracks" description="Skip tracks flagged as explicit content">
-              <Toggle checked={config.skipExplicit ?? false} onChange={(v) => handleChange('skipExplicit', v)} />
-            </SettingRow>
-          </div>
-        </section>
+            </section>
 
-        {/* ── Playlist ── */}
-        <section className="mb-8">
-          <SectionTitle title="Playlist" />
-          <div className="space-y-1">
-            <SettingRow label="Generate M3U8" description="Create an .m3u8 playlist file when a batch completes">
-              <Toggle checked={config.generateM3u8 ?? false} onChange={(v) => handleChange('generateM3u8', v)} />
-            </SettingRow>
-          </div>
-        </section>
+            <section className="mb-8">
+              <SectionTitle title="Audio Sources" />
+              <div className="space-y-1">
+                <SettingRow label="Audio Source Priority" description="Drag to reorder">
+                  <div className="flex gap-2">
+                    {(config.audioSourcePriority || ['tidal', 'qobuz', 'amazon']).map((source, index) => (
+                      <span key={source} className="badge badge-neutral cursor-move">
+                        {index + 1}. {source}
+                      </span>
+                    ))}
+                  </div>
+                </SettingRow>
+              </div>
+            </section>
 
-        {/* ── Lyrics ── */}
-        <section className="mb-8">
-          <SectionTitle title="Lyrics" />
-          <div className="space-y-1">
-            <SettingRow label="Fetch Lyrics" description="Automatically fetch lyrics from LRCLIB">
-              <Toggle checked={config.lyricsEnabled ?? false} onChange={(v) => handleChange('lyricsEnabled', v)} />
-            </SettingRow>
-            {config.lyricsEnabled && (
-              <SettingRow label="Lyrics Format">
-                <div style={{ minWidth: 160 }}>
-                  <Dropdown value={config.lyricsEmbedMode || 'lrc'} options={lyricsEmbedModeOptions} onChange={(v) => handleChange('lyricsEmbedMode', v)} />
-                </div>
-              </SettingRow>
-            )}
-          </div>
-        </section>
+            <section className="mb-8">
+              <SectionTitle title="Lyrics" />
+              <div className="space-y-1">
+                <SettingRow label="Fetch Lyrics" description="Automatically fetch lyrics from LRCLIB">
+                  <Toggle checked={config.lyricsEnabled ?? false} onChange={(v) => handleChange('lyricsEnabled', v)} />
+                </SettingRow>
+                {config.lyricsEnabled && (
+                  <SettingRow label="Lyrics Format">
+                    <div style={{ minWidth: 160 }}>
+                      <Dropdown value={config.lyricsEmbedMode || 'lrc'} options={lyricsEmbedModeOptions} onChange={(v) => handleChange('lyricsEmbedMode', v)} />
+                    </div>
+                  </SettingRow>
+                )}
+              </div>
+            </section>
+          </>
+        )}
 
-        {/* ── Playback ── */}
-        <section className="mb-8">
-          <SectionTitle title="Playback" />
-          <div className="space-y-1">
-            <SettingRow label="Sound Effects" description="Play sounds on download complete, error, etc.">
-              <Toggle
-                checked={config.soundEffectsEnabled ?? true}
-                onChange={(v) => {
-                  handleChange('soundEffectsEnabled', v);
-                  setSoundEnabled(v);
-                }}
-              />
-            </SettingRow>
-            {config.soundEffectsEnabled && (
-              <SettingRow label="Sound Volume">
-                <div className="flex items-center gap-3" style={{ minWidth: 140 }}>
-                  <input
-                    type="range"
-                    min="0"
-                    max="100"
-                    value={config.soundVolume ?? 70}
-                    onChange={(e) => handleChange('soundVolume', parseInt(e.target.value))}
-                    className="flex-1"
-                    style={{ accentColor: 'var(--color-accent)' }}
+        {/* ── Naming Tab ── */}
+        {activeTab === 'naming' && (
+          <>
+            <section className="mb-8">
+              <SectionTitle title="File Organization" />
+              <div className="space-y-1">
+                <SettingRow label="Folder Structure" description={`Preview: ${config.outputDirectory || defaultPath}/${namingTemplateOptions.find(o => o.value === config.namingTemplate)?.description || '{artist}/{title}'}`}>
+                  <div style={{ minWidth: 160 }}>
+                    <Dropdown value={config.namingTemplate} options={namingTemplateOptions} onChange={(v) => handleChange('namingTemplate', v)} />
+                  </div>
+                </SettingRow>
+              </div>
+            </section>
+
+            <section className="mb-8">
+              <SectionTitle title="Artist Formatting" />
+              <div className="space-y-1">
+                <SettingRow label="First Artist Only" description="Strip featured artists from artist tag (e.g. &quot;Artist feat. X&quot; &rarr; &quot;Artist&quot;)">
+                  <Toggle checked={config.firstArtistOnly ?? false} onChange={(v) => handleChange('firstArtistOnly', v)} />
+                </SettingRow>
+                {!config.firstArtistOnly && (
+                  <SettingRow label="Artist Separator" description="Separator between multiple artists">
+                    <div style={{ minWidth: 120 }}>
+                      <Dropdown
+                        value={config.artistSeparator || '; '}
+                        options={[
+                          { value: '; ', label: 'Semicolon', description: 'Artist; Artist' },
+                          { value: ', ', label: 'Comma', description: 'Artist, Artist' },
+                          { value: ' & ', label: 'Ampersand', description: 'Artist & Artist' },
+                          { value: ' / ', label: 'Slash', description: 'Artist / Artist' },
+                        ]}
+                        onChange={(v) => handleChange('artistSeparator', v)}
+                      />
+                    </div>
+                  </SettingRow>
+                )}
+              </div>
+            </section>
+          </>
+        )}
+
+        {/* ── UI Tab ── */}
+        {activeTab === 'ui' && (
+          <>
+            <section className="mb-8">
+              <SectionTitle title="Appearance" />
+              <div className="space-y-1">
+                <SettingRow label="Theme">
+                  <div style={{ minWidth: 160 }}>
+                    <Dropdown value={config.theme} options={themeOptions} onChange={(v) => { handleChange('theme', v); applyTheme(v as 'dark' | 'light' | 'system'); }} />
+                  </div>
+                </SettingRow>
+                <SettingRow label="Accent Color">
+                  <ColorPicker
+                    value={(config.accentColor || 'pink') as AccentColor}
+                    onChange={(color) => {
+                      handleChange('accentColor', color);
+                      applyAccentColor(color);
+                    }}
                   />
-                  <span className="w-8 text-center font-mono text-sm" style={{ color: 'var(--color-text-primary)' }}>
-                    {config.soundVolume ?? 70}%
-                  </span>
-                </div>
-              </SettingRow>
-            )}
-          </div>
-        </section>
-
-        {/* ── Network ── */}
-        <section className="mb-8">
-          <SectionTitle title="Network" />
-          <div className="space-y-1">
-            <SettingRow label="Proxy URL" description="HTTP or SOCKS5 proxy for all requests">
-              <input
-                type="text"
-                value={config.proxyUrl || ''}
-                onChange={(e) => handleChange('proxyUrl', e.target.value)}
-                placeholder="socks5://127.0.0.1:1080"
-                style={{ minWidth: 240 }}
-              />
-            </SettingRow>
-          </div>
-        </section>
-
-        {/* ── Advanced ── */}
-        <section className="mb-8">
-          <SectionTitle title="Advanced" />
-          <div className="space-y-1">
-            <SettingRow label="Download Timeout" description="Per-file timeout in minutes (0 = default 10m)">
-              <input
-                type="number"
-                min="0"
-                max="120"
-                value={config.downloadTimeoutMinutes ?? 10}
-                onChange={(e) => handleChange('downloadTimeoutMinutes', parseFloat(e.target.value) || 0)}
-                style={{ width: 80, textAlign: 'right' }}
-              />
-            </SettingRow>
-            <SettingRow label="Log Level" description="Verbosity of application logs">
-              <div style={{ minWidth: 140 }}>
-                <Dropdown value={config.logLevel || 'info'} options={logLevelOptions} onChange={(v) => handleChange('logLevel', v)} />
+                </SettingRow>
               </div>
-            </SettingRow>
-          </div>
-        </section>
+            </section>
+
+            <section className="mb-8">
+              <SectionTitle title="Sound" />
+              <div className="space-y-1">
+                <SettingRow label="Sound Effects" description="Play sounds on download complete, error, etc.">
+                  <Toggle
+                    checked={config.soundEffectsEnabled ?? true}
+                    onChange={(v) => {
+                      handleChange('soundEffectsEnabled', v);
+                      setSoundEnabled(v);
+                    }}
+                  />
+                </SettingRow>
+                {config.soundEffectsEnabled && (
+                  <SettingRow label="Sound Volume">
+                    <div className="flex items-center gap-3" style={{ minWidth: 140 }}>
+                      <input
+                        type="range"
+                        min="0"
+                        max="100"
+                        value={config.soundVolume ?? 70}
+                        onChange={(e) => handleChange('soundVolume', parseInt(e.target.value))}
+                        className="flex-1"
+                        style={{ accentColor: 'var(--color-accent)' }}
+                      />
+                      <span className="w-8 text-center font-mono text-sm" style={{ color: 'var(--color-text-primary)' }}>
+                        {config.soundVolume ?? 70}%
+                      </span>
+                    </div>
+                  </SettingRow>
+                )}
+              </div>
+            </section>
+          </>
+        )}
+
+        {/* ── Advanced Tab ── */}
+        {activeTab === 'advanced' && (
+          <>
+            <section className="mb-8">
+              <SectionTitle title="Network" />
+              <div className="space-y-1">
+                <SettingRow label="Proxy URL" description="HTTP or SOCKS5 proxy for all requests">
+                  <input
+                    type="text"
+                    value={config.proxyUrl || ''}
+                    onChange={(e) => handleChange('proxyUrl', e.target.value)}
+                    placeholder="socks5://127.0.0.1:1080"
+                    style={{ minWidth: 240 }}
+                  />
+                </SettingRow>
+              </div>
+            </section>
+
+            <section className="mb-8">
+              <SectionTitle title="Timeouts & Logging" />
+              <div className="space-y-1">
+                <SettingRow label="Download Timeout" description="Per-file timeout in minutes (0 = default 10m)">
+                  <input
+                    type="number"
+                    min="0"
+                    max="120"
+                    value={config.downloadTimeoutMinutes ?? 10}
+                    onChange={(e) => handleChange('downloadTimeoutMinutes', parseFloat(e.target.value) || 0)}
+                    style={{ width: 80, textAlign: 'right' }}
+                  />
+                </SettingRow>
+                <SettingRow label="Log Level" description="Verbosity of application logs">
+                  <div style={{ minWidth: 140 }}>
+                    <Dropdown value={config.logLevel || 'info'} options={logLevelOptions} onChange={(v) => handleChange('logLevel', v)} />
+                  </div>
+                </SettingRow>
+              </div>
+            </section>
+          </>
+        )}
 
       </div>
 
       {/* Fixed Footer */}
       <div
-        className="fixed bottom-0 left-[64px] right-0 p-4 glass"
+        className="fixed bottom-0 left-0 md:left-[64px] right-0 p-4 glass"
         style={{ borderTop: '1px solid var(--color-border-subtle)' }}
       >
         <div className="flex items-center justify-between max-w-2xl mx-auto">

@@ -22,6 +22,8 @@ type AudioTrackInfo struct {
 	CoverURL    string  `json:"coverUrl,omitempty"`
 	ReleaseDate string  `json:"releaseDate,omitempty"`
 	TrackNumber int     `json:"trackNumber,omitempty"`
+	Explicit    bool    `json:"explicit,omitempty"`
+	AlbumArtist string  `json:"albumArtist,omitempty"`
 }
 
 // AudioDownloadResult contains the result of a download

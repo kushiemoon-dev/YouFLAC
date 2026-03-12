@@ -304,6 +304,7 @@ func (t *TidalHifiService) GetTrackInfo(trackURL string) (*AudioTrackInfo, error
 		Quality:  "FLAC 16-bit/44.1kHz",
 		Platform: "tidal",
 		CoverURL: fmt.Sprintf("https://resources.tidal.com/images/%s/640x640.jpg", strings.ReplaceAll(track.Album.Cover, "-", "/")),
+		Explicit: track.Explicit,
 	}, nil
 }
 

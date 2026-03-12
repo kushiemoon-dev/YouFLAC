@@ -86,7 +86,7 @@ export function History() {
     <div className="min-h-screen pb-24">
       <Header title="History" subtitle="Your download history" />
 
-      <div className="px-8 pb-8">
+      <div className="px-4 md:px-8 pb-8">
         {/* Search and Filters */}
         <div className="flex flex-wrap items-center gap-4 mb-6">
           {/* Search */}
@@ -245,7 +245,7 @@ export function History() {
 
       {/* Clear Confirmation Modal */}
       {showClearConfirm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+        <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: 'var(--color-overlay)' }}>
           <div
             className="p-6 rounded-lg max-w-sm w-full mx-4"
             style={{ background: 'var(--color-bg-primary)' }}
