@@ -26,6 +26,9 @@ export interface Config {
   skipExplicit: boolean;
   saveCoverFile: boolean;
   firstArtistOnly: boolean;
+  artistSeparator: string;
+  autoQualityFallback: boolean;
+  searchResultsLimit: number;
 }
 
 export interface LogEntry {
@@ -79,6 +82,8 @@ export interface QueueItem {
   matchConfidence?: string;
   audioSource?: string;
   quality?: string;
+  actualQuality?: string;
+  explicit?: boolean;
   audioOnly?: boolean;
   matchCandidates?: AudioCandidate[];
   matchDiagnostics?: MatchDiagnostics;
@@ -208,7 +213,7 @@ export interface FileInfo {
 }
 
 export interface ParseURLResult {
-  type: string;
+  type: string; // 'video' | 'playlist' | 'channel' | 'invalid'
   videoId?: string;
   playlistId?: string;
   url: string;
@@ -396,6 +401,40 @@ export async function FilterHistoryBySource(source: string): Promise<HistoryEntr
 
 export async function FilterHistoryByStatus(status: string): Promise<HistoryEntry[]> {
   return api<HistoryEntry[]>(`/history/search?status=${encodeURIComponent(status)}`);
+}
+
+// ============== Converter API ==============
+
+export interface ConvertRequest {
+  sourcePath: string;
+  targetFormat: string;
+  bitrate?: number;
+  sampleRate?: number;
+}
+
+export interface ConvertResult {
+  outputPath: string;
+  format: string;
+  size: number;
+}
+
+export async function ConvertAudio(req: ConvertRequest): Promise<ConvertResult> {
+  return api<ConvertResult>('/convert', {
+    method: 'POST',
+    body: JSON.stringify(req),
+  });
+}
+
+export async function GetConvertFormats(): Promise<string[]> {
+  return api<string[]>('/convert/formats');
+}
+
+// ============== Search API ==============
+
+export async function SearchYouTube(query: string, limit?: number): Promise<VideoInfo[]> {
+  let url = `/search?q=${encodeURIComponent(query)}`;
+  if (limit) url += `&limit=${limit}`;
+  return api<VideoInfo[]>(url);
 }
 
 // ============== Video/URL API ==============

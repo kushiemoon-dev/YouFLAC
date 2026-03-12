@@ -112,16 +112,16 @@ export function AudioAnalyzer({ filePath, fileName, onClose }: AudioAnalyzerProp
   };
 
   const getScoreBackground = (score: number) => {
-    if (score >= 90) return 'rgba(34, 197, 94, 0.1)';
-    if (score >= 75) return 'rgba(var(--accent-rgb), 0.1)';
-    if (score >= 50) return 'rgba(251, 191, 36, 0.1)';
-    return 'rgba(239, 68, 68, 0.1)';
+    if (score >= 90) return 'var(--color-success-subtle)';
+    if (score >= 75) return 'var(--color-accent-subtle)';
+    if (score >= 50) return 'var(--color-warning-subtle)';
+    return 'var(--color-error-subtle)';
   };
 
   return (
     <div
       className="fixed inset-0 flex items-center justify-center z-50"
-      style={{ background: 'rgba(0, 0, 0, 0.7)' }}
+      style={{ background: 'var(--color-overlay-heavy)' }}
       onClick={onClose}
     >
       <div
@@ -224,7 +224,7 @@ export function AudioAnalyzer({ filePath, fileName, onClose }: AudioAnalyzerProp
                     {analysis.isTrueLossless && !analysis.fakeLossless && (
                       <span
                         className="flex items-center gap-1 px-2 py-1 rounded text-xs font-medium"
-                        style={{ background: 'rgba(34, 197, 94, 0.2)', color: 'var(--color-success)' }}
+                        style={{ background: 'var(--color-success-subtle)', color: 'var(--color-success)' }}
                       >
                         <CheckCircleIcon />
                         True Lossless
@@ -233,7 +233,7 @@ export function AudioAnalyzer({ filePath, fileName, onClose }: AudioAnalyzerProp
                     {analysis.fakeLossless && (
                       <span
                         className="flex items-center gap-1 px-2 py-1 rounded text-xs font-medium"
-                        style={{ background: 'rgba(251, 191, 36, 0.2)', color: 'var(--color-warning)' }}
+                        style={{ background: 'var(--color-warning-subtle)', color: 'var(--color-warning)' }}
                       >
                         <WarningIcon />
                         Possible Fake Lossless
@@ -242,7 +242,7 @@ export function AudioAnalyzer({ filePath, fileName, onClose }: AudioAnalyzerProp
                     {analysis.sampleRate > 44100 && analysis.bitsPerSample > 16 && (
                       <span
                         className="px-2 py-1 rounded text-xs font-medium"
-                        style={{ background: 'rgba(147, 51, 234, 0.2)', color: '#a855f7' }}
+                        style={{ background: 'var(--color-accent-subtle)', color: 'var(--color-accent)' }}
                       >
                         Hi-Res {analysis.bitsPerSample}/{analysis.sampleRate / 1000}
                       </span>
