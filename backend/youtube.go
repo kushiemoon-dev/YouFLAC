@@ -232,6 +232,113 @@ func GetPlaylistVideos(playlistURL string) (*PlaylistInfo, error) {
 	}, nil
 }
 
+// IsChannelURL checks if URL is a YouTube channel or user page
+func IsChannelURL(rawURL string) bool {
+	return strings.Contains(rawURL, "youtube.com/@") ||
+		strings.Contains(rawURL, "youtube.com/channel/") ||
+		strings.Contains(rawURL, "youtube.com/c/") ||
+		strings.Contains(rawURL, "youtube.com/user/")
+}
+
+// GetChannelVideos fetches all videos from a YouTube channel
+// Uses yt-dlp --flat-playlist to enumerate channel videos
+func GetChannelVideos(channelURL string, maxVideos int) (*PlaylistInfo, error) {
+	if maxVideos <= 0 {
+		maxVideos = 100
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 120*time.Second)
+	defer cancel()
+
+	// Append /videos to channel URL if not already present
+	videoURL := channelURL
+	if !strings.HasSuffix(videoURL, "/videos") && !strings.Contains(videoURL, "/videos") {
+		videoURL = strings.TrimSuffix(videoURL, "/") + "/videos"
+	}
+
+	cmd := exec.CommandContext(ctx, "yt-dlp",
+		"--flat-playlist",
+		"-j",
+		"--no-warnings",
+		"--playlist-end", fmt.Sprintf("%d", maxVideos),
+		videoURL,
+	)
+
+	output, err := cmd.Output()
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch channel videos: %w", err)
+	}
+
+	var videos []PlaylistVideo
+	var channelName string
+	lines := strings.Split(string(output), "\n")
+	position := 0
+
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		if line == "" {
+			continue
+		}
+
+		var entry struct {
+			ID        string  `json:"id"`
+			Title     string  `json:"title"`
+			Duration  float64 `json:"duration"`
+			Channel   string  `json:"channel"`
+			Uploader  string  `json:"uploader"`
+			Thumbnail string  `json:"thumbnail"`
+		}
+
+		if err := json.Unmarshal([]byte(line), &entry); err != nil {
+			continue
+		}
+
+		if entry.ID == "" {
+			continue
+		}
+
+		position++
+
+		if channelName == "" {
+			channelName = entry.Channel
+			if channelName == "" {
+				channelName = entry.Uploader
+			}
+		}
+
+		artist := entry.Channel
+		if artist == "" {
+			artist = entry.Uploader
+		}
+		artist = strings.TrimSuffix(artist, " - Topic")
+
+		thumbnail := entry.Thumbnail
+		if thumbnail == "" {
+			thumbnail = fmt.Sprintf("https://i.ytimg.com/vi/%s/hqdefault.jpg", entry.ID)
+		}
+
+		videos = append(videos, PlaylistVideo{
+			ID:        entry.ID,
+			Title:     entry.Title,
+			Artist:    artist,
+			Duration:  entry.Duration,
+			Thumbnail: thumbnail,
+			URL:       fmt.Sprintf("https://www.youtube.com/watch?v=%s", entry.ID),
+			Position:  position,
+		})
+	}
+
+	if len(videos) == 0 {
+		return nil, fmt.Errorf("channel is empty or unavailable")
+	}
+
+	return &PlaylistInfo{
+		Title:  channelName,
+		Author: channelName,
+		Videos: videos,
+	}, nil
+}
+
 // SearchYouTube searches YouTube for videos matching a query
 // Uses yt-dlp's ytsearch: prefix to search and return results
 func SearchYouTube(query string, maxResults int) ([]VideoInfo, error) {

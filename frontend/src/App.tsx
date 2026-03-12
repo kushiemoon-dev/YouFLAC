@@ -8,7 +8,9 @@ import { Settings } from './components/settings/Settings';
 import { FileManager } from './components/files/FileManager';
 import { Terminal } from './components/Terminal';
 import { About } from './components/About';
+import { Converter } from './components/converter/Converter';
 import { applyAccentColor } from './hooks/useAccentColor';
+import { applyTheme } from './hooks/useTheme';
 import { setSoundEnabled } from './hooks/useSoundEffects';
 import type { Page, AccentColor } from './types';
 import * as Api from './lib/api';
@@ -23,6 +25,10 @@ function App() {
         // Apply accent color
         if (config.accentColor) {
           applyAccentColor(config.accentColor as AccentColor);
+        }
+        // Apply theme
+        if (config.theme) {
+          applyTheme(config.theme as 'dark' | 'light' | 'system');
         }
         // Set sound effects state
         setSoundEnabled(config.soundEffectsEnabled ?? true);
@@ -40,6 +46,8 @@ function App() {
         return <Settings />;
       case 'files':
         return <FileManager />;
+      case 'converter':
+        return <Converter />;
       case 'terminal':
         return <Terminal />;
       case 'about':

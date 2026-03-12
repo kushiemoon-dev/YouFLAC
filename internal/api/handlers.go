@@ -13,7 +13,7 @@ import (
 	"youflac/backend"
 )
 
-const AppVersion = "2.0.0"
+const AppVersion = "3.0.0"
 
 // Health check
 func (s *Server) handleHealth(c *fiber.Ctx) error {
@@ -181,15 +181,12 @@ func (s *Server) handleExportFailed(c *fiber.Ctx) error {
 
 func (s *Server) handleAddPlaylistToQueue(c *fiber.Ctx) error {
 	var body struct {
-		URL     string `json:"url"`
-		Quality string `json:"quality"`
+		URL       string `json:"url"`
+		Quality   string `json:"quality"`
+		MaxVideos int    `json:"maxVideos"`
 	}
 	if err := c.BodyParser(&body); err != nil {
 		return c.Status(400).JSON(fiber.Map{"error": "Invalid request body"})
-	}
-
-	if err := backend.ValidateYouTubeURL(body.URL); err != nil {
-		return c.Status(400).JSON(fiber.Map{"error": "Invalid playlist URL: " + err.Error()})
 	}
 
 	quality := body.Quality
@@ -197,8 +194,23 @@ func (s *Server) handleAddPlaylistToQueue(c *fiber.Ctx) error {
 		quality = s.config.VideoQuality
 	}
 
-	// Get playlist info
-	playlist, err := backend.GetPlaylistVideos(body.URL)
+	// Detect channel URL vs playlist URL
+	var playlist *backend.PlaylistInfo
+	var err error
+
+	if backend.IsChannelURL(body.URL) {
+		maxVideos := body.MaxVideos
+		if maxVideos <= 0 {
+			maxVideos = 50
+		}
+		playlist, err = backend.GetChannelVideos(body.URL, maxVideos)
+	} else {
+		if err := backend.ValidateYouTubeURL(body.URL); err != nil {
+			return c.Status(400).JSON(fiber.Map{"error": "Invalid playlist URL: " + err.Error()})
+		}
+		playlist, err = backend.GetPlaylistVideos(body.URL)
+	}
+
 	if err != nil {
 		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
 	}
@@ -339,7 +351,7 @@ func (s *Server) handleRedownloadFromHistory(c *fiber.Ctx) error {
 // ============== Video/URL Handlers ==============
 
 type ParseURLResult struct {
-	Type       string `json:"type"`       // "video", "playlist", "invalid"
+	Type       string `json:"type"`       // "video", "playlist", "channel", "invalid"
 	VideoID    string `json:"videoId"`
 	PlaylistID string `json:"playlistId"`
 	URL        string `json:"url"`
@@ -356,10 +368,12 @@ func (s *Server) handleParseURL(c *fiber.Ctx) error {
 	url := strings.TrimSpace(body.URL)
 	result := ParseURLResult{URL: url}
 
-	// Check if playlist
-	if strings.Contains(url, "list=") {
+	// Check if channel URL
+	if backend.IsChannelURL(url) {
+		result.Type = "channel"
+	} else if strings.Contains(url, "list=") {
+		// Check if playlist
 		result.Type = "playlist"
-		// Extract playlist ID
 		if idx := strings.Index(url, "list="); idx != -1 {
 			pID := url[idx+5:]
 			if ampIdx := strings.Index(pID, "&"); ampIdx != -1 {
@@ -735,4 +749,51 @@ func (s *Server) handleGetImage(c *fiber.Ctx) error {
 
 	dataURL := "data:" + mimeType + ";base64," + base64.StdEncoding.EncodeToString(data)
 	return c.JSON(fiber.Map{"dataUrl": dataURL})
+}
+
+func (s *Server) handleConvert(c *fiber.Ctx) error {
+	var req backend.ConvertRequest
+	if err := c.BodyParser(&req); err != nil {
+		return c.Status(400).JSON(fiber.Map{"error": "invalid request body"})
+	}
+
+	if req.SourcePath == "" || req.TargetFormat == "" {
+		return c.Status(400).JSON(fiber.Map{"error": "sourcePath and targetFormat required"})
+	}
+
+	result, err := backend.ConvertAudio(req)
+	if err != nil {
+		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	return c.JSON(result)
+}
+
+func (s *Server) handleGetConvertFormats(c *fiber.Ctx) error {
+	return c.JSON(backend.SupportedConvertFormats)
+}
+
+func (s *Server) handleSearch(c *fiber.Ctx) error {
+	query := c.Query("q")
+	if query == "" {
+		return c.Status(400).JSON(fiber.Map{"error": "query parameter 'q' required"})
+	}
+
+	limit := c.QueryInt("limit", 0)
+	if limit <= 0 {
+		limit = s.config.SearchResultsLimit
+	}
+	if limit <= 0 {
+		limit = 10
+	}
+	if limit > 30 {
+		limit = 30
+	}
+
+	results, err := backend.SearchYouTube(query, limit)
+	if err != nil {
+		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	return c.JSON(results)
 }

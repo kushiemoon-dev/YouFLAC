@@ -269,7 +269,7 @@ export function FileManager() {
     <div className="min-h-screen">
       <Header title="File Manager" subtitle="Browse and manage your downloads" />
 
-      <div className="px-8 pb-8 space-y-6">
+      <div className="px-4 md:px-8 pb-8 space-y-6">
         {/* Path input */}
         <div className="flex gap-3">
           <input

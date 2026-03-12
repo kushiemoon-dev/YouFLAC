@@ -14,7 +14,7 @@ export function Header({ title, subtitle }: HeaderProps) {
   }, []);
 
   return (
-    <header className="flex items-center justify-between py-6 px-8">
+    <header className="flex items-center justify-between py-6 px-4 md:px-8">
       <div className="flex items-center gap-4">
         <div>
           <div className="flex items-center gap-3">

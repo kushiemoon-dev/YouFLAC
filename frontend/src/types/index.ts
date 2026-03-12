@@ -2,7 +2,7 @@
 export * from '../lib/api';
 
 // Page navigation
-export type Page = 'home' | 'history' | 'settings' | 'files' | 'terminal' | 'about';
+export type Page = 'home' | 'history' | 'settings' | 'files' | 'converter' | 'terminal' | 'about';
 
 // Queue status mapping
 export type QueueStatus =
@@ -14,7 +14,8 @@ export type QueueStatus =
   | 'organizing'
   | 'complete'
   | 'error'
-  | 'cancelled';
+  | 'cancelled'
+  | 'paused';
 
 // Theme types
 export type Theme = 'dark' | 'light' | 'system';

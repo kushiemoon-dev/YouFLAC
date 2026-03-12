@@ -18,12 +18,18 @@ import (
 type Metadata struct {
 	Title       string   `json:"title"`
 	Artist      string   `json:"artist"`
+	AlbumArtist string   `json:"albumArtist,omitempty"`
 	Album       string   `json:"album"`
 	Year        int      `json:"year,omitempty"`
+	ReleaseDate string   `json:"releaseDate,omitempty"` // YYYY-MM-DD or YYYY
 	ISRC        string   `json:"isrc,omitempty"`
 	Duration    float64  `json:"duration,omitempty"`
 	Genre       string   `json:"genre,omitempty"`
 	Track       int      `json:"track,omitempty"`
+	DiscNumber  int      `json:"discNumber,omitempty"`
+	TotalDiscs  int      `json:"totalDiscs,omitempty"`
+	Copyright   string   `json:"copyright,omitempty"`
+	Label       string   `json:"label,omitempty"`
 	Description string   `json:"description,omitempty"`
 	YouTubeID   string   `json:"youtubeId,omitempty"`
 	YouTubeURL  string   `json:"youtubeUrl,omitempty"`
@@ -83,6 +89,24 @@ var PredefinedTemplates = []NamingTemplate{
 		Description: "Year folder → Artist - Title.mkv",
 		Example:     "1987/Rick Astley - Never Gonna Give You Up.mkv",
 	},
+	{
+		Name:        "Album Tracks",
+		Template:    "{artist} - {album}/{track} {title}",
+		Description: "Artist - Album folder → Track# Title.mkv",
+		Example:     "Rick Astley - Whenever You Need Somebody/01 Never Gonna Give You Up.mkv",
+	},
+	{
+		Name:        "Genre",
+		Template:    "{genre}/{artist}/{title}",
+		Description: "Genre folder → Artist folder → Title.mkv",
+		Example:     "Pop/Rick Astley/Never Gonna Give You Up.mkv",
+	},
+	{
+		Name:        "Date",
+		Template:    "{date}/{artist} - {title}",
+		Description: "Release date folder → Artist - Title.mkv",
+		Example:     "2024-01-15/Rick Astley - Never Gonna Give You Up.mkv",
+	},
 }
 
 // Default template: Jellyfin style
@@ -137,6 +161,12 @@ func ApplyTemplate(template string, metadata *Metadata) string {
 	// Genre
 	path = strings.ReplaceAll(path, "{genre}", sanitizeOrEmpty(metadata.Genre))
 
+	// Album Artist
+	path = strings.ReplaceAll(path, "{albumArtist}", sanitizeOrEmpty(metadata.AlbumArtist))
+
+	// Release date (YYYY-MM-DD or YYYY)
+	path = strings.ReplaceAll(path, "{date}", sanitizeOrEmpty(metadata.ReleaseDate))
+
 	// YouTube ID
 	path = strings.ReplaceAll(path, "{youtube_id}", metadata.YouTubeID)
 
@@ -144,6 +174,47 @@ func ApplyTemplate(template string, metadata *Metadata) string {
 	path = cleanupPath(path)
 
 	return path
+}
+
+// FormatArtistName applies artist separator and first-artist-only settings
+func FormatArtistName(artist string, separator string, firstOnly bool) string {
+	if artist == "" {
+		return artist
+	}
+
+	// Common multi-artist separators to detect
+	delimiters := []string{"; ", ", ", " & ", " feat. ", " ft. ", " featuring ", " x "}
+
+	if firstOnly {
+		// Return only the first artist
+		for _, d := range delimiters {
+			if idx := strings.Index(strings.ToLower(artist), strings.ToLower(d)); idx > 0 {
+				return strings.TrimSpace(artist[:idx])
+			}
+		}
+		return artist
+	}
+
+	if separator == "" || separator == "; " {
+		// Default separator, no change needed
+		return artist
+	}
+
+	// Replace known delimiters with the configured separator
+	result := artist
+	for _, d := range delimiters {
+		// Case-insensitive replace for "feat." variants
+		lower := strings.ToLower(result)
+		for {
+			idx := strings.Index(strings.ToLower(lower), strings.ToLower(d))
+			if idx < 0 {
+				break
+			}
+			result = result[:idx] + separator + result[idx+len(d):]
+			lower = strings.ToLower(result)
+		}
+	}
+	return result
 }
 
 // sanitizeOrEmpty sanitizes the filename but returns empty string for empty input
@@ -267,7 +338,7 @@ func ValidateTemplate(template string) error {
 	}
 
 	// Check for at least one placeholder
-	placeholders := []string{"{artist}", "{title}", "{album}", "{year}", "{track}", "{genre}", "{youtube_id}"}
+	placeholders := []string{"{artist}", "{title}", "{album}", "{albumArtist}", "{year}", "{date}", "{track}", "{genre}", "{youtube_id}"}
 	hasPlaceholder := false
 	for _, p := range placeholders {
 		if strings.Contains(template, p) {
@@ -352,6 +423,8 @@ type MusicVideoNFO struct {
 	Directors     []string       `xml:"director,omitempty"`
 	Studios       []string       `xml:"studio,omitempty"`
 	Tags          []string       `xml:"tag,omitempty"`
+	Label         string         `xml:"label,omitempty"`
+	Credits       string         `xml:"credits,omitempty"`
 	UniqueID      []UniqueID     `xml:"uniqueid,omitempty"`
 	Thumb         []NFOThumb     `xml:"thumb,omitempty"`
 	Fanart        *NFOFanart     `xml:"fanart,omitempty"`
@@ -427,6 +500,8 @@ func GenerateNFO(metadata *Metadata, opts *NFOOptions) ([]byte, error) {
 		Directors: metadata.Directors,
 		Studios:   metadata.Studios,
 		Tags:      metadata.Tags,
+		Label:     metadata.Label,
+		Credits:   metadata.Copyright,
 		DateAdded: time.Now().Format("2006-01-02 15:04:05"),
 	}
 
