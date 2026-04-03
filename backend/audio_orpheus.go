@@ -141,6 +141,14 @@ func (t *TidalHifiService) SearchTrack(query string) (*TidalTrackResponse, error
 		return nil, fmt.Errorf("failed to read search response: %w", err)
 	}
 
+	if resp.StatusCode != http.StatusOK {
+		preview := string(body)
+		if len(preview) > 200 {
+			preview = preview[:200]
+		}
+		return nil, fmt.Errorf("unexpected HTTP status %d: %s", resp.StatusCode, preview)
+	}
+
 	var searchResp TidalSearchResponse
 	if err := json.Unmarshal(body, &searchResp); err != nil {
 		return nil, fmt.Errorf("failed to parse search response: %w", err)
@@ -181,6 +189,14 @@ func (t *TidalHifiService) GetTrackByID(trackID int) (*TidalTrackResponse, error
 		return nil, fmt.Errorf("failed to read info response: %w", err)
 	}
 
+	if resp.StatusCode != http.StatusOK {
+		preview := string(body)
+		if len(preview) > 200 {
+			preview = preview[:200]
+		}
+		return nil, fmt.Errorf("unexpected HTTP status %d: %s", resp.StatusCode, preview)
+	}
+
 	// Try v2.0 wrapper format first
 	var infoResp TidalInfoResponse
 	if err := json.Unmarshal(body, &infoResp); err != nil {
@@ -219,6 +235,14 @@ func (t *TidalHifiService) GetStreamURL(trackID int) (string, error) {
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return "", fmt.Errorf("failed to read stream response: %w", err)
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		preview := string(body)
+		if len(preview) > 200 {
+			preview = preview[:200]
+		}
+		return "", fmt.Errorf("unexpected HTTP status %d: %s", resp.StatusCode, preview)
 	}
 
 	// Try v2.0 wrapper format first
