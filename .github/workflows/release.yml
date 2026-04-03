@@ -48,15 +48,27 @@ jobs:
             binary: youflac-server
             pkg: youflac-server-darwin-arm64
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout YouFLAC
+        uses: actions/checkout@v4
+        with:
+          path: youflac
+      - name: Checkout YouFLAC-Core
+        uses: actions/checkout@v4
+        with:
+          repository: kushiemoon-dev/YouFLAC-Core
+          path: YouFLAC-Core
       - uses: actions/setup-go@v5
         with:
-          go-version-file: go.mod
+          go-version-file: youflac/go.mod
       - uses: actions/download-artifact@v4
         with:
           name: frontend-dist
-          path: frontend/dist
+          path: youflac/frontend/dist
+      - name: Point replace directive to CI checkout
+        working-directory: youflac
+        run: go mod edit -replace github.com/kushiemoon-dev/youflac-core=../YouFLAC-Core
       - name: Build binary
+        working-directory: youflac
         env:
           GOOS: ${{ matrix.goos }}
           GOARCH: ${{ matrix.goarch }}
@@ -68,6 +80,7 @@ jobs:
             ./cmd/server
       - name: Package (tar.gz)
         if: matrix.ext == 'tar.gz'
+        working-directory: youflac
         run: |
           mkdir -p dist/${{ matrix.pkg }}/frontend
           cp ${{ matrix.binary }} dist/${{ matrix.pkg }}/
@@ -75,6 +88,7 @@ jobs:
           tar -czf ${{ matrix.pkg }}.tar.gz -C dist ${{ matrix.pkg }}
       - name: Package (zip)
         if: matrix.ext == 'zip'
+        working-directory: youflac
         run: |
           mkdir -p dist/${{ matrix.pkg }}/frontend
           cp ${{ matrix.binary }} dist/${{ matrix.pkg }}/
@@ -83,7 +97,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.pkg }}
-          path: ${{ matrix.pkg }}.${{ matrix.ext }}
+          path: youflac/${{ matrix.pkg }}.${{ matrix.ext }}
 
   docker:
     needs: [frontend-build, binaries]
