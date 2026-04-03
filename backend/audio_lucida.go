@@ -35,15 +35,15 @@ type LucidaResponse struct {
 	Success bool   `json:"success"`
 	Error   string `json:"error,omitempty"`
 	Track   struct {
-		ID          string  `json:"id"`
-		Title       string  `json:"title"`
-		Artist      string  `json:"artist"`
-		Album       string  `json:"album"`
-		Duration    float64 `json:"duration"`
-		CoverURL    string  `json:"cover"`
-		ReleaseDate string  `json:"releaseDate"`
-		ISRC        string  `json:"isrc"`
-		Platform    string  `json:"platform"`
+		ID          string          `json:"id"`
+		Title       string          `json:"title"`
+		Artist      json.RawMessage `json:"artist"`
+		Album       string          `json:"album"`
+		Duration    float64         `json:"duration"`
+		CoverURL    string          `json:"cover"`
+		ReleaseDate string          `json:"releaseDate"`
+		ISRC        string          `json:"isrc"`
+		Platform    string          `json:"platform"`
 	} `json:"track"`
 	Formats []struct {
 		Format  string `json:"format"`
@@ -51,6 +51,27 @@ type LucidaResponse struct {
 		Size    int64  `json:"size"`
 		URL     string `json:"url"`
 	} `json:"formats"`
+}
+
+// lucidaArtistName extracts a plain string from the artist field, which may be
+// a JSON string ("Name") or an object ({"name": "Name"}).
+func lucidaArtistName(raw json.RawMessage) string {
+	if len(raw) == 0 {
+		return ""
+	}
+	// Try plain string first
+	var s string
+	if err := json.Unmarshal(raw, &s); err == nil {
+		return s
+	}
+	// Try object with "name" key
+	var obj struct {
+		Name string `json:"name"`
+	}
+	if err := json.Unmarshal(raw, &obj); err == nil {
+		return obj.Name
+	}
+	return ""
 }
 
 // NewLucidaService creates a new Lucida download service.
@@ -103,7 +124,7 @@ func (l *LucidaService) GetTrackInfo(trackURL string) (*AudioTrackInfo, error) {
 	return &AudioTrackInfo{
 		ID:          resp.Track.ID,
 		Title:       resp.Track.Title,
-		Artist:      resp.Track.Artist,
+		Artist:      lucidaArtistName(resp.Track.Artist),
 		Album:       resp.Track.Album,
 		Duration:    resp.Track.Duration,
 		ISRC:        resp.Track.ISRC,
@@ -220,7 +241,8 @@ func (l *LucidaService) Download(trackURL string, outputDir string, format strin
 		return nil, fmt.Errorf("failed to create output directory: %w", err)
 	}
 
-	safeTitle := SanitizeFileName(fmt.Sprintf("%s - %s", resp.Track.Artist, resp.Track.Title))
+	artistName := lucidaArtistName(resp.Track.Artist)
+	safeTitle := SanitizeFileName(fmt.Sprintf("%s - %s", artistName, resp.Track.Title))
 	outputPath := filepath.Join(outputDir, fmt.Sprintf("%s.%s", safeTitle, strings.ToLower(downloadFormat)))
 
 	if err := l.downloadFile(downloadURL, outputPath); err != nil {
@@ -237,7 +259,7 @@ func (l *LucidaService) Download(trackURL string, outputDir string, format strin
 		Track: &AudioTrackInfo{
 			ID:          resp.Track.ID,
 			Title:       resp.Track.Title,
-			Artist:      resp.Track.Artist,
+			Artist:      artistName,
 			Album:       resp.Track.Album,
 			Duration:    resp.Track.Duration,
 			ISRC:        resp.Track.ISRC,
