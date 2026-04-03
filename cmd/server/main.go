@@ -7,7 +7,7 @@ import (
 	"os/signal"
 	"syscall"
 
-	"youflac/backend"
+	core "github.com/kushiemoon-dev/youflac-core"
 	"youflac/internal/api"
 )
 
@@ -15,19 +15,19 @@ func main() {
 	log.Println("YouFlac Server starting...")
 
 	// Load config (env vars override file config)
-	config, err := backend.LoadConfigWithEnv()
+	config, err := core.LoadConfigWithEnv()
 	if err != nil {
 		log.Printf("Warning: Could not load config: %v, using defaults", err)
-		config = backend.GetDefaultConfig()
+		config = core.GetDefaultConfig()
 	}
 
 	// Initialise structured logger (LOG_LEVEL env var overrides config)
-	backend.InitLogger(config.LogLevel)
+	core.InitLogger(config.LogLevel)
 
 	// Ensure output directory exists
 	outputDir := config.OutputDirectory
 	if outputDir == "" {
-		outputDir = backend.GetDefaultOutputDirectory()
+		outputDir = core.GetDefaultOutputDirectory()
 	}
 	if err := os.MkdirAll(outputDir, 0755); err != nil {
 		log.Printf("Warning: Could not create output directory: %v", err)
@@ -38,14 +38,14 @@ func main() {
 	defer cancel()
 
 	// Initialize queue
-	queue := backend.NewQueue(ctx, config.ConcurrentDownloads)
+	queue := core.NewQueue(ctx, config.ConcurrentDownloads)
 
 	// Initialize history
-	history := backend.NewHistory()
+	history := core.NewHistory()
 
 	// Initialize file index
-	dataPath := backend.GetDataPathWithEnv()
-	fileIndex := backend.NewFileIndex(dataPath)
+	dataPath := core.GetDataPathWithEnv()
+	fileIndex := core.NewFileIndex(dataPath)
 	go func() {
 		if err := fileIndex.ScanDirectory(outputDir); err != nil {
 			log.Printf("Warning: Could not scan output directory: %v", err)
@@ -56,7 +56,7 @@ func main() {
 	server := api.NewServer(config, queue, history, fileIndex)
 
 	// Set queue progress callback to broadcast via WebSocket
-	queue.SetProgressCallback(func(event backend.QueueEvent) {
+	queue.SetProgressCallback(func(event core.QueueEvent) {
 		server.BroadcastQueueEvent(event)
 	})
 
