@@ -8,17 +8,31 @@ on:
 
 jobs:
   # lint removed: golangci-lint does not yet support Go 1.25 — use `make lint` locally
-  test-coverage:
+  # Go unit tests live in YouFLAC-Core — this job verifies the module integration compiles
+  build-check:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout YouFLAC
+        uses: actions/checkout@v4
+        with:
+          path: youflac
+      - name: Checkout YouFLAC-Core
+        uses: actions/checkout@v4
+        with:
+          repository: kushiemoon-dev/YouFLAC-Core
+          path: YouFLAC-Core
       - uses: actions/setup-go@v5
         with:
-          go-version-file: go.mod
-      - run: |
-          go test ./backend/... -short -timeout 120s -race \
-            -covermode=atomic -coverprofile=coverage.out
-      - run: go tool cover -func=coverage.out
+          go-version-file: youflac/go.mod
+      - name: Point replace directive to CI checkout
+        working-directory: youflac
+        run: go mod edit -replace github.com/kushiemoon-dev/youflac-core=../YouFLAC-Core
+      - name: Build server
+        working-directory: youflac
+        run: go build ./cmd/server
+      - name: Vet
+        working-directory: youflac
+        run: go vet ./...
 
   test-frontend:
     runs-on: ubuntu-latest
