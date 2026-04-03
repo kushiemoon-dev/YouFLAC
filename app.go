@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"youflac/backend"
+	core "github.com/kushiemoon-dev/youflac-core"
 
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
@@ -17,10 +17,10 @@ import (
 // App struct - main Wails application
 type App struct {
 	ctx       context.Context
-	queue     *backend.Queue
-	config    *backend.Config
-	fileIndex *backend.FileIndex
-	history   *backend.History
+	queue     *core.Queue
+	config    *core.Config
+	fileIndex *core.FileIndex
+	history   *core.History
 }
 
 // NewApp creates a new App application struct
@@ -33,13 +33,13 @@ func (a *App) startup(ctx context.Context) {
 	a.ctx = ctx
 
 	// Load config first
-	config, err := backend.LoadConfig()
+	config, err := core.LoadConfig()
 	if err == nil {
 		a.config = config
 	} else {
 		// Use default config
-		a.config = &backend.Config{
-			OutputDirectory:     backend.GetDefaultOutputDirectory(),
+		a.config = &core.Config{
+			OutputDirectory:     core.GetDefaultOutputDirectory(),
 			VideoQuality:        "best",
 			AudioSourcePriority: []string{"tidal", "qobuz", "amazon"},
 			NamingTemplate:      "{artist}/{title}/{title}",
@@ -55,13 +55,13 @@ func (a *App) startup(ctx context.Context) {
 	if maxConcurrent < 1 {
 		maxConcurrent = 2
 	}
-	a.queue = backend.NewQueue(ctx, maxConcurrent)
+	a.queue = core.NewQueue(ctx, maxConcurrent)
 
 	// Set config for queue
 	a.queue.SetConfig(a.config)
 
 	// Set up progress callback to emit Wails events
-	a.queue.SetProgressCallback(func(event backend.QueueEvent) {
+	a.queue.SetProgressCallback(func(event core.QueueEvent) {
 		runtime.EventsEmit(ctx, "queue:event", event)
 	})
 
@@ -72,14 +72,14 @@ func (a *App) startup(ctx context.Context) {
 	a.queue.AutoSave(30 * time.Second)
 
 	// Initialize file index for duplicate detection
-	a.fileIndex = backend.NewFileIndex(backend.GetDataPath())
+	a.fileIndex = core.NewFileIndex(core.GetDataPath())
 	a.fileIndex.Load()
 
 	// Scan output directory in background
 	go func() {
 		outputDir := a.config.OutputDirectory
 		if outputDir == "" {
-			outputDir = backend.GetDefaultOutputDirectory()
+			outputDir = core.GetDefaultOutputDirectory()
 		}
 		a.fileIndex.ScanDirectory(outputDir)
 		a.fileIndex.Save()
@@ -89,7 +89,7 @@ func (a *App) startup(ctx context.Context) {
 	a.queue.SetFileIndex(a.fileIndex)
 
 	// Initialize history
-	a.history = backend.NewHistory()
+	a.history = core.NewHistory()
 
 	// Pass history to queue for recording completed downloads
 	a.queue.SetHistory(a.history)
@@ -141,12 +141,12 @@ func detectURLType(url string) string {
 // =============================================================================
 
 // GetVideoInfo fetches video metadata from YouTube
-func (a *App) GetVideoInfo(url string) (*backend.VideoInfo, error) {
-	videoID, err := backend.ParseYouTubeURL(url)
+func (a *App) GetVideoInfo(url string) (*core.VideoInfo, error) {
+	videoID, err := core.ParseYouTubeURL(url)
 	if err != nil {
 		return nil, err
 	}
-	return backend.GetVideoMetadata(videoID)
+	return core.GetVideoMetadata(videoID)
 }
 
 // =============================================================================
@@ -154,7 +154,7 @@ func (a *App) GetVideoInfo(url string) (*backend.VideoInfo, error) {
 // =============================================================================
 
 // FindAudioMatch finds best FLAC audio match for a video
-func (a *App) FindAudioMatch(videoInfo *backend.VideoInfo) (*backend.MatchResult, error) {
+func (a *App) FindAudioMatch(videoInfo *core.VideoInfo) (*core.MatchResult, error) {
 	// Audio matching is handled automatically in the queue processing pipeline
 	return nil, nil
 }
@@ -165,11 +165,11 @@ func (a *App) FindAudioMatch(videoInfo *backend.VideoInfo) (*backend.MatchResult
 
 // AddToQueue adds a download request to the queue
 // If the URL is a playlist, all videos are added individually
-func (a *App) AddToQueue(request backend.DownloadRequest) (string, error) {
+func (a *App) AddToQueue(request core.DownloadRequest) (string, error) {
 	// Check if it's a playlist URL
-	if backend.IsPlaylistURL(request.VideoURL) {
+	if core.IsPlaylistURL(request.VideoURL) {
 		// Try to extract video ID first (playlist URL might include a video)
-		_, err := backend.ParseYouTubeURL(request.VideoURL)
+		_, err := core.ParseYouTubeURL(request.VideoURL)
 		if err != nil {
 			// Pure playlist URL (no video ID), fetch all videos
 			ids, err := a.AddPlaylistToQueue(request.VideoURL, request.Quality)
@@ -187,20 +187,20 @@ func (a *App) AddToQueue(request backend.DownloadRequest) (string, error) {
 
 // AddPlaylistToQueue fetches playlist videos and adds each to the queue
 func (a *App) AddPlaylistToQueue(playlistURL string, quality string) ([]string, error) {
-	playlistInfo, err := backend.GetPlaylistVideos(playlistURL)
+	playlistInfo, err := core.GetPlaylistVideos(playlistURL)
 	if err != nil {
 		return nil, err
 	}
 
 	ids := []string{}
 	for _, video := range playlistInfo.Videos {
-		request := backend.DownloadRequest{
+		request := core.DownloadRequest{
 			VideoURL: video.URL,
 			Quality:  quality,
 		}
 
 		// Add with metadata already fetched
-		videoInfo := &backend.VideoInfo{
+		videoInfo := &core.VideoInfo{
 			ID:        video.ID,
 			Title:     video.Title,
 			Artist:    video.Artist,
@@ -221,22 +221,22 @@ func (a *App) AddPlaylistToQueue(playlistURL string, quality string) ([]string, 
 }
 
 // AddToQueueWithMetadata adds an item with pre-fetched metadata
-func (a *App) AddToQueueWithMetadata(request backend.DownloadRequest, videoInfo *backend.VideoInfo) (string, error) {
+func (a *App) AddToQueueWithMetadata(request core.DownloadRequest, videoInfo *core.VideoInfo) (string, error) {
 	return a.queue.AddToQueueWithMetadata(request, videoInfo)
 }
 
 // GetQueue returns all queue items
-func (a *App) GetQueue() []backend.QueueItem {
+func (a *App) GetQueue() []core.QueueItem {
 	return a.queue.GetQueue()
 }
 
 // GetQueueItem returns a specific queue item
-func (a *App) GetQueueItem(id string) *backend.QueueItem {
+func (a *App) GetQueueItem(id string) *core.QueueItem {
 	return a.queue.GetItem(id)
 }
 
 // GetQueueStats returns queue statistics
-func (a *App) GetQueueStats() backend.QueueStats {
+func (a *App) GetQueueStats() core.QueueStats {
 	return a.queue.GetStats()
 }
 
@@ -280,19 +280,19 @@ func (a *App) SaveQueue() error {
 // =============================================================================
 
 // GetConfig returns current configuration
-func (a *App) GetConfig() *backend.Config {
+func (a *App) GetConfig() *core.Config {
 	return a.config
 }
 
 // SaveConfig saves configuration
-func (a *App) SaveConfig(config backend.Config) error {
+func (a *App) SaveConfig(config core.Config) error {
 	a.config = &config
-	return backend.SaveConfig(&config)
+	return core.SaveConfig(&config)
 }
 
 // GetDefaultOutputDirectory returns default output path
 func (a *App) GetDefaultOutputDirectory() string {
-	return backend.GetDefaultOutputDirectory()
+	return core.GetDefaultOutputDirectory()
 }
 
 // =============================================================================
@@ -313,7 +313,7 @@ func (a *App) ListFiles(directory string, fileType string) ([]FileInfo, error) {
 	if directory == "" {
 		directory = a.config.OutputDirectory
 		if directory == "" {
-			directory = backend.GetDefaultOutputDirectory()
+			directory = core.GetDefaultOutputDirectory()
 		}
 	}
 
@@ -370,7 +370,7 @@ func (a *App) ListFiles(directory string, fileType string) ([]FileInfo, error) {
 func (a *App) BrowseDirectory() (string, error) {
 	dir, err := runtime.OpenDirectoryDialog(a.ctx, runtime.OpenDialogOptions{
 		Title:            "Select Directory",
-		DefaultDirectory: backend.GetDefaultOutputDirectory(),
+		DefaultDirectory: core.GetDefaultOutputDirectory(),
 	})
 	return dir, err
 }
@@ -428,13 +428,13 @@ func (a *App) ReorganizePlaylist(playlistFolder string) (*ReorganizePlaylistResu
 
 	// Get all queue items for this playlist
 	allItems := a.queue.GetQueue()
-	playlistItems := make(map[string]*backend.QueueItem) // key: normalized title+artist
+	playlistItems := make(map[string]*core.QueueItem) // key: normalized title+artist
 
 	for i := range allItems {
 		item := &allItems[i]
 		if item.PlaylistName == playlistName && item.PlaylistPosition > 0 {
 			// Create normalized key for matching
-			key := backend.NormalizeForMatching(item.Title, item.Artist)
+			key := core.NormalizeForMatching(item.Title, item.Artist)
 			keyStr := key.Title + "|" + key.Artist
 			playlistItems[keyStr] = item
 		}
@@ -457,9 +457,9 @@ func (a *App) ReorganizePlaylist(playlistFolder string) (*ReorganizePlaylistResu
 
 		// Try to match file to a queue item
 		// Extract title and artist from filename or embedded metadata
-		title, artist := backend.ParseFilename(path)
+		title, artist := core.ParseFilename(path)
 
-		key := backend.NormalizeForMatching(title, artist)
+		key := core.NormalizeForMatching(title, artist)
 		keyStr := key.Title + "|" + key.Artist
 
 		item, found := playlistItems[keyStr]
@@ -478,8 +478,8 @@ func (a *App) ReorganizePlaylist(playlistFolder string) (*ReorganizePlaylistResu
 		// Generate new filename with track prefix
 		newFilename := fmt.Sprintf("%02d - %s - %s%s",
 			item.PlaylistPosition,
-			backend.SanitizeFileName(item.Artist),
-			backend.SanitizeFileName(item.Title),
+			core.SanitizeFileName(item.Artist),
+			core.SanitizeFileName(item.Title),
 			ext)
 
 		// Create new folder with track prefix
@@ -534,7 +534,7 @@ func (a *App) ReorganizePlaylist(playlistFolder string) (*ReorganizePlaylistResu
 func (a *App) GetPlaylistFolders() ([]string, error) {
 	outputDir := a.config.OutputDirectory
 	if outputDir == "" {
-		outputDir = backend.GetDefaultOutputDirectory()
+		outputDir = core.GetDefaultOutputDirectory()
 	}
 
 	folders := []string{}
@@ -549,7 +549,7 @@ func (a *App) GetPlaylistFolders() ([]string, error) {
 	playlistNames := make(map[string]bool)
 	for _, item := range allItems {
 		if item.PlaylistName != "" {
-			playlistNames[backend.SanitizeFileName(item.PlaylistName)] = true
+			playlistNames[core.SanitizeFileName(item.PlaylistName)] = true
 		}
 	}
 
@@ -645,27 +645,27 @@ func (a *App) FlattenPlaylistFolder(playlistFolder string) (*FlattenPlaylistResu
 // =============================================================================
 
 // GetHistory returns all history entries
-func (a *App) GetHistory() []backend.HistoryEntry {
+func (a *App) GetHistory() []core.HistoryEntry {
 	return a.history.GetAll()
 }
 
 // SearchHistory searches history by title or artist
-func (a *App) SearchHistory(query string) []backend.HistoryEntry {
+func (a *App) SearchHistory(query string) []core.HistoryEntry {
 	return a.history.Search(query)
 }
 
 // FilterHistoryBySource returns history filtered by audio source
-func (a *App) FilterHistoryBySource(source string) []backend.HistoryEntry {
+func (a *App) FilterHistoryBySource(source string) []core.HistoryEntry {
 	return a.history.FilterBySource(source)
 }
 
 // FilterHistoryByStatus returns history filtered by status
-func (a *App) FilterHistoryByStatus(status string) []backend.HistoryEntry {
+func (a *App) FilterHistoryByStatus(status string) []core.HistoryEntry {
 	return a.history.FilterByStatus(status)
 }
 
 // GetHistoryStats returns history statistics
-func (a *App) GetHistoryStats() backend.HistoryStats {
+func (a *App) GetHistoryStats() core.HistoryStats {
 	return a.history.GetStats()
 }
 
@@ -686,7 +686,7 @@ func (a *App) RedownloadFromHistory(id string) (string, error) {
 		return "", fmt.Errorf("history entry not found: %s", id)
 	}
 
-	request := backend.DownloadRequest{
+	request := core.DownloadRequest{
 		VideoURL: entry.VideoURL,
 	}
 
@@ -698,8 +698,8 @@ func (a *App) RedownloadFromHistory(id string) (string, error) {
 // =============================================================================
 
 // AnalyzeAudio performs quality analysis on an audio file
-func (a *App) AnalyzeAudio(filePath string) (*backend.AudioAnalysis, error) {
-	return backend.AnalyzeAudio(filePath)
+func (a *App) AnalyzeAudio(filePath string) (*core.AudioAnalysis, error) {
+	return core.AnalyzeAudio(filePath)
 }
 
 // GenerateSpectrogram creates a spectrogram image for an audio file
@@ -715,7 +715,7 @@ func (a *App) GenerateSpectrogram(inputPath string) (string, error) {
 	fileName := fmt.Sprintf("spec_%x.png", hash(inputPath))
 	outputPath := filepath.Join(tempDir, fileName)
 
-	if err := backend.GenerateSpectrogram(inputPath, outputPath); err != nil {
+	if err := core.GenerateSpectrogram(inputPath, outputPath); err != nil {
 		return "", err
 	}
 
@@ -732,7 +732,7 @@ func (a *App) GenerateWaveform(inputPath string) (string, error) {
 	fileName := fmt.Sprintf("wave_%x.png", hash(inputPath))
 	outputPath := filepath.Join(tempDir, fileName)
 
-	if err := backend.GenerateWaveform(inputPath, outputPath); err != nil {
+	if err := core.GenerateWaveform(inputPath, outputPath); err != nil {
 		return "", err
 	}
 
@@ -744,39 +744,39 @@ func (a *App) GenerateWaveform(inputPath string) (string, error) {
 // =============================================================================
 
 // FetchLyrics fetches lyrics for a track from LRCLIB
-func (a *App) FetchLyrics(artist, title string) (*backend.LyricsResult, error) {
-	return backend.FetchLyrics(artist, title)
+func (a *App) FetchLyrics(artist, title string) (*core.LyricsResult, error) {
+	return core.FetchLyrics(artist, title)
 }
 
 // FetchLyricsWithAlbum fetches lyrics with album context for better matching
-func (a *App) FetchLyricsWithAlbum(artist, title, album string) (*backend.LyricsResult, error) {
-	return backend.FetchLyricsWithAlbum(artist, title, album)
+func (a *App) FetchLyricsWithAlbum(artist, title, album string) (*core.LyricsResult, error) {
+	return core.FetchLyricsWithAlbum(artist, title, album)
 }
 
 // EmbedLyrics embeds lyrics into a media file
-func (a *App) EmbedLyrics(mediaPath string, lyrics *backend.LyricsResult) error {
-	return backend.EmbedLyricsInFile(mediaPath, lyrics)
+func (a *App) EmbedLyrics(mediaPath string, lyrics *core.LyricsResult) error {
+	return core.EmbedLyricsInFile(mediaPath, lyrics)
 }
 
 // SaveLRCFile saves synced lyrics to a .lrc file alongside the media file
-func (a *App) SaveLRCFile(mediaPath string, lyrics *backend.LyricsResult) (string, error) {
-	return backend.SaveLRCFile(lyrics, mediaPath)
+func (a *App) SaveLRCFile(mediaPath string, lyrics *core.LyricsResult) (string, error) {
+	return core.SaveLRCFile(lyrics, mediaPath)
 }
 
 // FetchAndEmbedLyrics fetches and embeds lyrics in one operation
 func (a *App) FetchAndEmbedLyrics(mediaPath, artist, title, mode string) error {
-	embedMode := backend.LyricsEmbedMode(mode)
-	return backend.FetchAndEmbedLyrics(mediaPath, artist, title, embedMode)
+	embedMode := core.LyricsEmbedMode(mode)
+	return core.FetchAndEmbedLyrics(mediaPath, artist, title, embedMode)
 }
 
 // HasLyrics checks if a media file has embedded lyrics
 func (a *App) HasLyrics(mediaPath string) (bool, error) {
-	return backend.HasLyrics(mediaPath)
+	return core.HasLyrics(mediaPath)
 }
 
 // ExtractLyrics extracts embedded lyrics from a media file
-func (a *App) ExtractLyrics(mediaPath string) (*backend.LyricsResult, error) {
-	return backend.ExtractLyrics(mediaPath)
+func (a *App) ExtractLyrics(mediaPath string) (*core.LyricsResult, error) {
+	return core.ExtractLyrics(mediaPath)
 }
 
 // =============================================================================
