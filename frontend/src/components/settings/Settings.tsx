@@ -442,6 +442,39 @@ export function Settings() {
                 </SettingRow>
               </div>
             </section>
+
+            <section className="mb-8">
+              <SectionTitle title="Qobuz Authentication" />
+              <div className="space-y-1">
+                <SettingRow label="App ID" description="Qobuz application ID">
+                  <input
+                    type="text"
+                    value={config.qobuzAppId || ''}
+                    onChange={(e) => handleChange('qobuzAppId', e.target.value)}
+                    placeholder="App ID"
+                    style={{ minWidth: 240 }}
+                  />
+                </SettingRow>
+                <SettingRow label="App Secret" description="Qobuz application secret">
+                  <input
+                    type="password"
+                    value={config.qobuzAppSecret || ''}
+                    onChange={(e) => handleChange('qobuzAppSecret', e.target.value)}
+                    placeholder="App Secret"
+                    style={{ minWidth: 240 }}
+                  />
+                </SettingRow>
+                <SettingRow label="User Token" description="Qobuz user authentication token">
+                  <input
+                    type="password"
+                    value={config.qobuzUserToken || ''}
+                    onChange={(e) => handleChange('qobuzUserToken', e.target.value)}
+                    placeholder="User Token"
+                    style={{ minWidth: 240 }}
+                  />
+                </SettingRow>
+              </div>
+            </section>
           </>
         )}
 
