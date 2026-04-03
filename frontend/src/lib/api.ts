@@ -29,6 +29,9 @@ export interface Config {
   artistSeparator: string;
   autoQualityFallback: boolean;
   searchResultsLimit: number;
+  qobuzAppId: string;
+  qobuzAppSecret: string;
+  qobuzUserToken: string;
 }
 
 export interface LogEntry {

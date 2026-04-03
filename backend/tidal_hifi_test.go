@@ -12,7 +12,7 @@ func TestTidalHifiService_Search_Integration(t *testing.T) {
 		t.Skip("Skipping integration test in short mode")
 	}
 
-	service := NewTidalHifiService(nil)
+	service := NewTidalHifiService(nil, "highest")
 
 	if !service.IsAvailable() {
 		t.Skip("TidalHifi service not available")
@@ -33,7 +33,7 @@ func TestTidalHifiService_GetStreamURL_Integration(t *testing.T) {
 		t.Skip("Skipping integration test in short mode")
 	}
 
-	service := NewTidalHifiService(nil)
+	service := NewTidalHifiService(nil, "highest")
 
 	if !service.IsAvailable() {
 		t.Skip("TidalHifi service not available")
@@ -55,7 +55,7 @@ func TestTidalHifiService_DownloadBySearch_Integration(t *testing.T) {
 		t.Skip("Skipping download test in short mode")
 	}
 
-	service := NewTidalHifiService(nil)
+	service := NewTidalHifiService(nil, "highest")
 
 	if !service.IsAvailable() {
 		t.Skip("TidalHifi service not available")
