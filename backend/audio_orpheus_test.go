@@ -19,7 +19,7 @@ import (
 
 // newTidalSvc creates a TidalHifiService pointed at a mock test server.
 func newTidalSvc(ts *httptest.Server) *TidalHifiService {
-	svc := NewTidalHifiService(ts.Client())
+	svc := NewTidalHifiService(ts.Client(), "highest")
 	svc.baseURL = ts.URL
 	return svc
 }
