@@ -10,21 +10,21 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/recover"
 	"github.com/gofiber/websocket/v2"
 
-	"youflac/backend"
+	core "github.com/kushiemoon-dev/youflac-core"
 )
 
 // Server represents the HTTP API server
 type Server struct {
 	app       *fiber.App
-	config    *backend.Config
-	queue     *backend.Queue
-	history   *backend.History
-	fileIndex *backend.FileIndex
+	config    *core.Config
+	queue     *core.Queue
+	history   *core.History
+	fileIndex *core.FileIndex
 	wsHub     *WebSocketHub
 }
 
 // NewServer creates a new API server instance
-func NewServer(config *backend.Config, queue *backend.Queue, history *backend.History, fileIndex *backend.FileIndex) *Server {
+func NewServer(config *core.Config, queue *core.Queue, history *core.History, fileIndex *core.FileIndex) *Server {
 	app := fiber.New(fiber.Config{
 		AppName:      "YouFlac Server",
 		ServerHeader: "YouFlac",
@@ -173,7 +173,7 @@ func (s *Server) Shutdown() error {
 }
 
 // BroadcastQueueEvent sends a queue event to all connected WebSocket clients
-func (s *Server) BroadcastQueueEvent(event backend.QueueEvent) {
+func (s *Server) BroadcastQueueEvent(event core.QueueEvent) {
 	s.wsHub.Broadcast(event)
 }
 
