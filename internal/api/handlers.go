@@ -10,7 +10,7 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 
-	"youflac/backend"
+	core "github.com/kushiemoon-dev/youflac-core"
 )
 
 const AppVersion = "3.0.1"
@@ -32,7 +32,7 @@ func (s *Server) handleServicesStatus(c *fiber.Ctx) error {
 	if s.config != nil {
 		proxyURL = s.config.ProxyURL
 	}
-	statuses := backend.CheckServiceStatus(proxyURL)
+	statuses := core.CheckServiceStatus(proxyURL)
 	return c.JSON(statuses)
 }
 
@@ -44,14 +44,14 @@ func (s *Server) handleGetQueue(c *fiber.Ctx) error {
 }
 
 func (s *Server) handleAddToQueue(c *fiber.Ctx) error {
-	var req backend.DownloadRequest
+	var req core.DownloadRequest
 	if err := c.BodyParser(&req); err != nil {
 		return c.Status(400).JSON(fiber.Map{"error": "Invalid request body"})
 	}
 
 	// If VideoURL is a music service URL, route it to SpotifyURL
 	if req.SpotifyURL == "" && req.VideoURL != "" {
-		if backend.IsQobuzURL(req.VideoURL) || backend.IsTidalURL(req.VideoURL) || backend.IsSpotifyURL(req.VideoURL) {
+		if core.IsQobuzURL(req.VideoURL) || core.IsTidalURL(req.VideoURL) || core.IsSpotifyURL(req.VideoURL) {
 			req.SpotifyURL = req.VideoURL
 			req.VideoURL = ""
 		}
@@ -59,7 +59,7 @@ func (s *Server) handleAddToQueue(c *fiber.Ctx) error {
 
 	// Only validate as YouTube URL if VideoURL is still set
 	if req.VideoURL != "" {
-		if err := backend.ValidateYouTubeURL(req.VideoURL); err != nil {
+		if err := core.ValidateYouTubeURL(req.VideoURL); err != nil {
 			return c.Status(400).JSON(fiber.Map{"error": "Invalid video URL: " + err.Error()})
 		}
 	}
@@ -156,7 +156,7 @@ func (s *Server) handleResumeAll(c *fiber.Ctx) error {
 func (s *Server) handleRetryQueueItemWithOverride(c *fiber.Ctx) error {
 	id := c.Params("id")
 
-	var req backend.RetryOverrideRequest
+	var req core.RetryOverrideRequest
 	if err := c.BodyParser(&req); err != nil {
 		return c.Status(400).JSON(fiber.Map{"error": "Invalid request body"})
 	}
@@ -206,20 +206,20 @@ func (s *Server) handleAddPlaylistToQueue(c *fiber.Ctx) error {
 	}
 
 	// Detect channel URL vs playlist URL
-	var playlist *backend.PlaylistInfo
+	var playlist *core.PlaylistInfo
 	var err error
 
-	if backend.IsChannelURL(body.URL) {
+	if core.IsChannelURL(body.URL) {
 		maxVideos := body.MaxVideos
 		if maxVideos <= 0 {
 			maxVideos = 50
 		}
-		playlist, err = backend.GetChannelVideos(body.URL, maxVideos)
+		playlist, err = core.GetChannelVideos(body.URL, maxVideos)
 	} else {
-		if err := backend.ValidateYouTubeURL(body.URL); err != nil {
+		if err := core.ValidateYouTubeURL(body.URL); err != nil {
 			return c.Status(400).JSON(fiber.Map{"error": "Invalid playlist URL: " + err.Error()})
 		}
-		playlist, err = backend.GetPlaylistVideos(body.URL)
+		playlist, err = core.GetPlaylistVideos(body.URL)
 	}
 
 	if err != nil {
@@ -229,12 +229,12 @@ func (s *Server) handleAddPlaylistToQueue(c *fiber.Ctx) error {
 	// Add each video to queue
 	ids := []string{}
 	for _, video := range playlist.Videos {
-		req := backend.DownloadRequest{
+		req := core.DownloadRequest{
 			VideoURL: video.URL,
 			Quality:  quality,
 		}
 		// Convert PlaylistVideo to VideoInfo
-		videoInfo := &backend.VideoInfo{
+		videoInfo := &core.VideoInfo{
 			ID:        video.ID,
 			Title:     video.Title,
 			Artist:    video.Artist,
@@ -255,7 +255,7 @@ func (s *Server) handleAddPlaylistToQueue(c *fiber.Ctx) error {
 // ============== Config Handlers ==============
 
 func (s *Server) handleGetConfig(c *fiber.Ctx) error {
-	config, err := backend.LoadConfig()
+	config, err := core.LoadConfig()
 	if err != nil {
 		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
 	}
@@ -263,22 +263,22 @@ func (s *Server) handleGetConfig(c *fiber.Ctx) error {
 }
 
 func (s *Server) handleSaveConfig(c *fiber.Ctx) error {
-	var config backend.Config
+	var config core.Config
 	if err := c.BodyParser(&config); err != nil {
 		return c.Status(400).JSON(fiber.Map{"error": "Invalid request body"})
 	}
 
-	if err := backend.ValidateOutputDirectory(config.OutputDirectory); err != nil {
+	if err := core.ValidateOutputDirectory(config.OutputDirectory); err != nil {
 		return c.Status(400).JSON(fiber.Map{"error": "Invalid output directory: " + err.Error()})
 	}
 
 	if len(config.AudioSourcePriority) > 0 {
-		if err := backend.ValidateAudioSources(config.AudioSourcePriority); err != nil {
+		if err := core.ValidateAudioSources(config.AudioSourcePriority); err != nil {
 			return c.Status(400).JSON(fiber.Map{"error": "Invalid audio source priority: " + err.Error()})
 		}
 	}
 
-	if err := backend.SaveConfig(&config); err != nil {
+	if err := core.SaveConfig(&config); err != nil {
 		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
 	}
 
@@ -289,7 +289,7 @@ func (s *Server) handleSaveConfig(c *fiber.Ctx) error {
 }
 
 func (s *Server) handleGetDefaultOutput(c *fiber.Ctx) error {
-	return c.JSON(fiber.Map{"path": backend.GetDefaultOutputDirectory()})
+	return c.JSON(fiber.Map{"path": core.GetDefaultOutputDirectory()})
 }
 
 // ============== History Handlers ==============
@@ -333,7 +333,7 @@ func (s *Server) handleRedownloadFromHistory(c *fiber.Ctx) error {
 
 	// Find entry in history
 	entries := s.history.GetAll()
-	var entry *backend.HistoryEntry
+	var entry *core.HistoryEntry
 	for _, e := range entries {
 		if e.ID == id {
 			entry = &e
@@ -346,7 +346,7 @@ func (s *Server) handleRedownloadFromHistory(c *fiber.Ctx) error {
 	}
 
 	// Add to queue
-	req := backend.DownloadRequest{
+	req := core.DownloadRequest{
 		VideoURL: entry.VideoURL,
 		Quality:  entry.Quality,
 	}
@@ -380,7 +380,7 @@ func (s *Server) handleParseURL(c *fiber.Ctx) error {
 	result := ParseURLResult{URL: url}
 
 	// Check if channel URL
-	if backend.IsChannelURL(url) {
+	if core.IsChannelURL(url) {
 		result.Type = "channel"
 	} else if strings.Contains(url, "list=") {
 		// Check if playlist
@@ -394,7 +394,7 @@ func (s *Server) handleParseURL(c *fiber.Ctx) error {
 		}
 	} else {
 		// Try to parse as video
-		videoID, err := backend.ParseYouTubeURL(url)
+		videoID, err := core.ParseYouTubeURL(url)
 		if err != nil {
 			result.Type = "invalid"
 		} else {
@@ -412,12 +412,12 @@ func (s *Server) handleGetVideoInfo(c *fiber.Ctx) error {
 		return c.Status(400).JSON(fiber.Map{"error": "URL required"})
 	}
 
-	videoID, err := backend.ParseYouTubeURL(url)
+	videoID, err := core.ParseYouTubeURL(url)
 	if err != nil {
 		return c.Status(400).JSON(fiber.Map{"error": err.Error()})
 	}
 
-	info, err := backend.GetVideoMetadata(videoID)
+	info, err := core.GetVideoMetadata(videoID)
 	if err != nil {
 		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
 	}
@@ -426,13 +426,13 @@ func (s *Server) handleGetVideoInfo(c *fiber.Ctx) error {
 }
 
 func (s *Server) handleFindAudioMatch(c *fiber.Ctx) error {
-	var videoInfo backend.VideoInfo
+	var videoInfo core.VideoInfo
 	if err := c.BodyParser(&videoInfo); err != nil {
 		return c.Status(400).JSON(fiber.Map{"error": "Invalid request body"})
 	}
 
 	// Use empty candidates and default options - the matcher will try to find matches
-	result, err := backend.MatchVideoToAudio(&videoInfo, nil, nil)
+	result, err := core.MatchVideoToAudio(&videoInfo, nil, nil)
 	if err != nil {
 		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
 	}
@@ -475,7 +475,7 @@ func (s *Server) handleListFiles(c *fiber.Ctx) error {
 	if dir == "" {
 		dir = s.config.OutputDirectory
 		if dir == "" {
-			dir = backend.GetDefaultOutputDirectory()
+			dir = core.GetDefaultOutputDirectory()
 		}
 	}
 
@@ -526,7 +526,7 @@ func (s *Server) handleListFiles(c *fiber.Ctx) error {
 func (s *Server) handleGetPlaylistFolders(c *fiber.Ctx) error {
 	outputDir := s.config.OutputDirectory
 	if outputDir == "" {
-		outputDir = backend.GetDefaultOutputDirectory()
+		outputDir = core.GetDefaultOutputDirectory()
 	}
 
 	folders := []string{}
@@ -601,7 +601,7 @@ func (s *Server) handleAnalyzeAudio(c *fiber.Ctx) error {
 		return c.Status(400).JSON(fiber.Map{"error": "Invalid request body"})
 	}
 
-	analysis, err := backend.AnalyzeAudio(body.FilePath)
+	analysis, err := core.AnalyzeAudio(body.FilePath)
 	if err != nil {
 		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
 	}
@@ -621,7 +621,7 @@ func (s *Server) handleGenerateSpectrogram(c *fiber.Ctx) error {
 	tempDir := os.TempDir()
 	outputPath := filepath.Join(tempDir, "spectrogram_"+filepath.Base(body.FilePath)+".png")
 
-	if err := backend.GenerateSpectrogram(body.FilePath, outputPath); err != nil {
+	if err := core.GenerateSpectrogram(body.FilePath, outputPath); err != nil {
 		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
 	}
 
@@ -640,7 +640,7 @@ func (s *Server) handleGenerateWaveform(c *fiber.Ctx) error {
 	tempDir := os.TempDir()
 	outputPath := filepath.Join(tempDir, "waveform_"+filepath.Base(body.FilePath)+".png")
 
-	if err := backend.GenerateWaveform(body.FilePath, outputPath); err != nil {
+	if err := core.GenerateWaveform(body.FilePath, outputPath); err != nil {
 		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
 	}
 
@@ -658,13 +658,13 @@ func (s *Server) handleFetchLyrics(c *fiber.Ctx) error {
 		return c.Status(400).JSON(fiber.Map{"error": "artist and title required"})
 	}
 
-	var lyrics *backend.LyricsResult
+	var lyrics *core.LyricsResult
 	var err error
 
 	if album != "" {
-		lyrics, err = backend.FetchLyricsWithAlbum(artist, title, album)
+		lyrics, err = core.FetchLyricsWithAlbum(artist, title, album)
 	} else {
-		lyrics, err = backend.FetchLyrics(artist, title)
+		lyrics, err = core.FetchLyrics(artist, title)
 	}
 
 	if err != nil {
@@ -677,13 +677,13 @@ func (s *Server) handleFetchLyrics(c *fiber.Ctx) error {
 func (s *Server) handleEmbedLyrics(c *fiber.Ctx) error {
 	var body struct {
 		MediaPath string               `json:"mediaPath"`
-		Lyrics    backend.LyricsResult `json:"lyrics"`
+		Lyrics    core.LyricsResult `json:"lyrics"`
 	}
 	if err := c.BodyParser(&body); err != nil {
 		return c.Status(400).JSON(fiber.Map{"error": "Invalid request body"})
 	}
 
-	if err := backend.EmbedLyricsInFile(body.MediaPath, &body.Lyrics); err != nil {
+	if err := core.EmbedLyricsInFile(body.MediaPath, &body.Lyrics); err != nil {
 		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
 	}
 
@@ -693,13 +693,13 @@ func (s *Server) handleEmbedLyrics(c *fiber.Ctx) error {
 func (s *Server) handleSaveLRCFile(c *fiber.Ctx) error {
 	var body struct {
 		MediaPath string               `json:"mediaPath"`
-		Lyrics    backend.LyricsResult `json:"lyrics"`
+		Lyrics    core.LyricsResult `json:"lyrics"`
 	}
 	if err := c.BodyParser(&body); err != nil {
 		return c.Status(400).JSON(fiber.Map{"error": "Invalid request body"})
 	}
 
-	lrcPath, err := backend.SaveLRCFile(&body.Lyrics, body.MediaPath)
+	lrcPath, err := core.SaveLRCFile(&body.Lyrics, body.MediaPath)
 	if err != nil {
 		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
 	}
@@ -711,9 +711,9 @@ func (s *Server) handleSaveLRCFile(c *fiber.Ctx) error {
 
 func (s *Server) handleGetLogs(c *fiber.Ctx) error {
 	sinceID := c.QueryInt("since", 0)
-	entries := backend.GetLogs(int64(sinceID))
+	entries := core.GetLogs(int64(sinceID))
 	if entries == nil {
-		entries = []backend.LogEntry{}
+		entries = []core.LogEntry{}
 	}
 	return c.JSON(entries)
 }
@@ -736,7 +736,7 @@ func (s *Server) handleGetImage(c *fiber.Ctx) error {
 	absTemp, _ := filepath.Abs(os.TempDir())
 	absOutput := s.config.OutputDirectory
 	if absOutput == "" {
-		absOutput = backend.GetDefaultOutputDirectory()
+		absOutput = core.GetDefaultOutputDirectory()
 	}
 	absOutput, _ = filepath.Abs(absOutput)
 
@@ -763,7 +763,7 @@ func (s *Server) handleGetImage(c *fiber.Ctx) error {
 }
 
 func (s *Server) handleConvert(c *fiber.Ctx) error {
-	var req backend.ConvertRequest
+	var req core.ConvertRequest
 	if err := c.BodyParser(&req); err != nil {
 		return c.Status(400).JSON(fiber.Map{"error": "invalid request body"})
 	}
@@ -772,7 +772,7 @@ func (s *Server) handleConvert(c *fiber.Ctx) error {
 		return c.Status(400).JSON(fiber.Map{"error": "sourcePath and targetFormat required"})
 	}
 
-	result, err := backend.ConvertAudio(req)
+	result, err := core.ConvertAudio(req)
 	if err != nil {
 		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
 	}
@@ -781,7 +781,7 @@ func (s *Server) handleConvert(c *fiber.Ctx) error {
 }
 
 func (s *Server) handleGetConvertFormats(c *fiber.Ctx) error {
-	return c.JSON(backend.SupportedConvertFormats)
+	return c.JSON(core.SupportedConvertFormats)
 }
 
 func (s *Server) handleSearch(c *fiber.Ctx) error {
@@ -801,7 +801,7 @@ func (s *Server) handleSearch(c *fiber.Ctx) error {
 		limit = 30
 	}
 
-	results, err := backend.SearchYouTube(query, limit)
+	results, err := core.SearchYouTube(query, limit)
 	if err != nil {
 		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
 	}
