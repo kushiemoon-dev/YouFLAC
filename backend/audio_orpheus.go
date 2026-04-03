@@ -28,6 +28,7 @@ const (
 type TidalHifiService struct {
 	client  *http.Client
 	baseURL string
+	quality string
 }
 
 // TidalManifest represents the decoded manifest from hifi-api
@@ -93,13 +94,15 @@ type TidalStreamDataResponse struct {
 
 // NewTidalHifiService creates a new Tidal HiFi download service.
 // If client is nil, a default client is used (respects PROXY_URL env var).
-func NewTidalHifiService(client *http.Client) *TidalHifiService {
+// quality is the config PreferredQuality value ("highest", "24bit", "16bit", etc.).
+func NewTidalHifiService(client *http.Client, quality string) *TidalHifiService {
 	if client == nil {
 		client, _ = NewHTTPClient(0, "")
 	}
 	return &TidalHifiService{
 		client:  client,
 		baseURL: tidalHifiAPIBase,
+		quality: quality,
 	}
 }
 
@@ -218,7 +221,11 @@ func (t *TidalHifiService) GetTrackByID(trackID int) (*TidalTrackResponse, error
 
 // GetStreamURL fetches the FLAC stream URL for a track
 func (t *TidalHifiService) GetStreamURL(trackID int) (string, error) {
-	streamURL := fmt.Sprintf("%s/track/?id=%d&quality=LOSSLESS", t.baseURL, trackID)
+	tidalQuality := string(TidalQualityLossless)
+	if t.quality == "highest" || t.quality == "24bit" {
+		tidalQuality = string(TidalQualityHiRes)
+	}
+	streamURL := fmt.Sprintf("%s/track/?id=%d&quality=%s", t.baseURL, trackID, tidalQuality)
 
 	req, err := http.NewRequest("GET", streamURL, nil)
 	if err != nil {
