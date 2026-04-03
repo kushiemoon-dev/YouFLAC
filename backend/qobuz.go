@@ -28,12 +28,12 @@ type QobuzTrackInfo struct {
 
 // Qobuz URL patterns
 var (
-	qobuzTrackRegex    = regexp.MustCompile(`qobuz\.com/[a-z]{2}-[a-z]{2}/track/(\d+)`)
-	qobuzAlbumRegex    = regexp.MustCompile(`qobuz\.com/[a-z]{2}-[a-z]{2}/album/[^/]+/(\d+)`)
-	qobuzPlaylistRegex = regexp.MustCompile(`qobuz\.com/[a-z]{2}-[a-z]{2}/playlist/(\d+)`)
+	qobuzTrackRegex    = regexp.MustCompile(`qobuz\.com/[a-z]{2}-[a-z]{2}/track/([a-zA-Z0-9]+)`)
+	qobuzAlbumRegex    = regexp.MustCompile(`qobuz\.com/[a-z]{2}-[a-z]{2}/album/[^/]+/([a-zA-Z0-9]+)`)
+	qobuzPlaylistRegex = regexp.MustCompile(`qobuz\.com/[a-z]{2}-[a-z]{2}/playlist/([a-zA-Z0-9]+)`)
 	// Alternative format without locale
-	qobuzTrackRegexAlt = regexp.MustCompile(`qobuz\.com/track/(\d+)`)
-	qobuzAlbumRegexAlt = regexp.MustCompile(`qobuz\.com/album/[^/]+/(\d+)`)
+	qobuzTrackRegexAlt = regexp.MustCompile(`qobuz\.com/track/([a-zA-Z0-9]+)`)
+	qobuzAlbumRegexAlt = regexp.MustCompile(`qobuz\.com/album/[^/]+/([a-zA-Z0-9]+)`)
 )
 
 // ParseQobuzURL extracts track/album ID from Qobuz URL
