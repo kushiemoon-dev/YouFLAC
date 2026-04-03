@@ -22,6 +22,7 @@ require (
 	github.com/gorilla/websocket v1.5.3 // indirect
 	github.com/jchv/go-winloader v0.0.0-20250406163304-c1995be93bd1 // indirect
 	github.com/klauspost/compress v1.18.4 // indirect
+	github.com/kushiemoon-dev/youflac-core v0.0.0-00010101000000-000000000000 // indirect
 	github.com/labstack/echo/v4 v4.15.0 // indirect
 	github.com/labstack/gommon v0.4.2 // indirect
 	github.com/leaanthony/go-ansi-parser v1.6.1 // indirect
@@ -48,3 +49,5 @@ require (
 )
 
 // replace github.com/wailsapp/wails/v2 v2.11.0 => /home/kushie/go/pkg/mod
+
+replace github.com/kushiemoon-dev/youflac-core => ../../../../YouFLAC-Core
