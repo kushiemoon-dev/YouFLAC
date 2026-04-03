@@ -49,8 +49,19 @@ func (s *Server) handleAddToQueue(c *fiber.Ctx) error {
 		return c.Status(400).JSON(fiber.Map{"error": "Invalid request body"})
 	}
 
-	if err := backend.ValidateYouTubeURL(req.VideoURL); err != nil {
-		return c.Status(400).JSON(fiber.Map{"error": "Invalid video URL: " + err.Error()})
+	// If VideoURL is a music service URL, route it to SpotifyURL
+	if req.SpotifyURL == "" && req.VideoURL != "" {
+		if backend.IsQobuzURL(req.VideoURL) || backend.IsTidalURL(req.VideoURL) || backend.IsSpotifyURL(req.VideoURL) {
+			req.SpotifyURL = req.VideoURL
+			req.VideoURL = ""
+		}
+	}
+
+	// Only validate as YouTube URL if VideoURL is still set
+	if req.VideoURL != "" {
+		if err := backend.ValidateYouTubeURL(req.VideoURL); err != nil {
+			return c.Status(400).JSON(fiber.Map{"error": "Invalid video URL: " + err.Error()})
+		}
 	}
 
 	id, err := s.queue.AddToQueue(req)
