@@ -13,7 +13,7 @@ import (
 	core "github.com/kushiemoon-dev/youflac-core"
 )
 
-const AppVersion = "3.0.1"
+const AppVersion = "3.1.0"
 
 // Health check
 func (s *Server) handleHealth(c *fiber.Ctx) error {
