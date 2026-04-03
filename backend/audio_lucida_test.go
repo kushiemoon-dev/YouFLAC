@@ -125,6 +125,49 @@ func TestLucidaService_IsAvailable_AllEndpointsFail(t *testing.T) {
 // GetTrackInfo
 // ============================================================================
 
+func TestLucidaArtistName_StringFormat(t *testing.T) {
+	raw := []byte(`"Emile Mosseri"`)
+	if got := lucidaArtistName(raw); got != "Emile Mosseri" {
+		t.Errorf("lucidaArtistName(string) = %q, want %q", got, "Emile Mosseri")
+	}
+}
+
+func TestLucidaArtistName_ObjectFormat(t *testing.T) {
+	raw := []byte(`{"name": "Emile Mosseri"}`)
+	if got := lucidaArtistName(raw); got != "Emile Mosseri" {
+		t.Errorf("lucidaArtistName(object) = %q, want %q", got, "Emile Mosseri")
+	}
+}
+
+func TestLucidaService_GetTrackInfo_ArtistAsObject(t *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		fmt.Fprint(w, `{
+			"success": true,
+			"track": {
+				"id": "track456",
+				"title": "The Last of Us",
+				"artist": {"name": "Emile Mosseri"},
+				"album": "TLOU2",
+				"duration": 180.0,
+				"isrc": "USABC9999999",
+				"platform": "tidal"
+			},
+			"formats": [{"format": "flac", "quality": "lossless", "size": 1024, "url": "http://example.com/file.flac"}]
+		}`)
+	}))
+	defer ts.Close()
+
+	svc := newLucidaSvcClient(ts)
+	info, err := svc.GetTrackInfo("https://tidal.com/browse/track/456")
+	if err != nil {
+		t.Fatalf("GetTrackInfo() error: %v", err)
+	}
+	if info.Artist != "Emile Mosseri" {
+		t.Errorf("Artist = %q, want %q", info.Artist, "Emile Mosseri")
+	}
+}
+
 func TestLucidaService_GetTrackInfo_Success(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != "POST" || !strings.HasSuffix(r.URL.Path, lucidaAPIPath) {
