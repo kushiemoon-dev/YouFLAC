@@ -90,7 +90,7 @@ func GetBinPath() string {
 
 // LoadConfig loads configuration from file
 func LoadConfig() (*Config, error) {
-	configPath := GetConfigPath()
+	configPath := GetConfigPathWithEnv()
 
 	data, err := os.ReadFile(configPath)
 	if err != nil {
@@ -111,7 +111,7 @@ func LoadConfig() (*Config, error) {
 
 // SaveConfig saves configuration to file
 func SaveConfig(config *Config) error {
-	configPath := GetConfigPath()
+	configPath := GetConfigPathWithEnv()
 
 	// Ensure directory exists
 	if err := os.MkdirAll(filepath.Dir(configPath), 0755); err != nil {
