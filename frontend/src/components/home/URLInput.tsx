@@ -1,6 +1,9 @@
 import { useState, useCallback } from 'react';
 import * as Api from '../../lib/api';
 import type { VideoInfo } from '../../lib/api';
+import { classifyURL } from '../../utils/urlDetect';
+import { ChannelDownloadModal } from './ChannelDownloadModal';
+import type { VideoInfoLite } from '../../hooks/useChannelFetch';
 
 // Icons
 const LinkIcon = () => (
@@ -78,6 +81,8 @@ export function URLInput({ onAdd }: URLInputProps) {
   const [searchResults, setSearchResults] = useState<VideoInfo[]>([]);
   const [addingIds, setAddingIds] = useState<Set<string>>(new Set());
   const [previewVideoId, setPreviewVideoId] = useState<string | null>(null);
+  const [channelModalOpen, setChannelModalOpen] = useState(false);
+  const [channelUrl, setChannelUrl] = useState('');
 
   const handleURLSubmit = useCallback(async () => {
     if (!url.trim()) return;
@@ -87,10 +92,15 @@ export function URLInput({ onAdd }: URLInputProps) {
 
     try {
       const trimmedUrl = url.trim();
-      const isPlaylist = trimmedUrl.includes('list=') && !trimmedUrl.includes('v=');
-      const isChannel = /youtube\.com\/(@|channel\/|c\/|user\/)/.test(trimmedUrl);
+      const kind = classifyURL(trimmedUrl);
 
-      if (isPlaylist || isChannel) {
+      if (kind === 'channel') {
+        setChannelUrl(trimmedUrl);
+        setUrl('');
+        setChannelModalOpen(true);
+        setLoading(false);
+        return;
+      } else if (kind === 'playlist') {
         const ids = await Api.AddPlaylistToQueue(trimmedUrl);
         setUrl('');
         setPreview(null);
@@ -145,6 +155,12 @@ export function URLInput({ onAdd }: URLInputProps) {
         next.delete(result.id);
         return next;
       });
+    }
+  }, [onAdd]);
+
+  const handleTracksResolved = useCallback(async (items: VideoInfoLite[]) => {
+    for (const item of items) {
+      await onAdd(`https://www.youtube.com/watch?v=${item.id}`);
     }
   }, [onAdd]);
 
@@ -409,6 +425,13 @@ export function URLInput({ onAdd }: URLInputProps) {
           </span>
         </div>
       )}
+
+      <ChannelDownloadModal
+        url={channelUrl}
+        open={channelModalOpen}
+        onClose={() => setChannelModalOpen(false)}
+        onTracksResolved={handleTracksResolved}
+      />
 
       {/* Video Preview Modal */}
       {previewVideoId && (
