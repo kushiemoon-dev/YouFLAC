@@ -46,8 +46,9 @@ describe('AnalyzerBatch', () => {
 
     render(<AnalyzerBatch />);
 
-    const file1 = new File(['audio'], 'track1.flac', { type: 'audio/flac' });
-    const file2 = new File(['audio'], 'track2.mp3', { type: 'audio/mpeg' });
+    // Add path property to simulate Wails desktop file picker behavior.
+    const file1 = Object.assign(new File(['audio'], 'track1.flac', { type: 'audio/flac' }), { path: '/tmp/track1.flac' });
+    const file2 = Object.assign(new File(['audio'], 'track2.mp3', { type: 'audio/mpeg' }), { path: '/tmp/track2.mp3' });
 
     const input = document.querySelector('input[type="file"]') as HTMLInputElement;
     fireEvent.change(input, { target: { files: [file1, file2] } });
