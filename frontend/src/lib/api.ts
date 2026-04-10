@@ -563,6 +563,26 @@ export async function FetchAndEmbedLyrics(mediaPath: string, artist: string, tit
   }
 }
 
+// ============== Resampler API ==============
+export interface ResampleOptions {
+  inputPath: string;
+  outputPath: string;
+  sampleRate: number;
+  bitDepth: number;
+  dither: boolean;
+  format: 'flac' | 'wav' | 'alac';
+}
+export interface ResampleResult {
+  success: boolean;
+  outputPath: string;
+  inputRate: number;
+  outputRate: number;
+  durationMs: number;
+}
+export async function Resample(opts: ResampleOptions): Promise<ResampleResult> {
+  return api<ResampleResult>('/resampler', { method: 'POST', body: JSON.stringify(opts) });
+}
+
 // ============== Image API ==============
 
 export async function GetImageAsDataURL(path: string): Promise<string> {
