@@ -5,6 +5,7 @@ import { AnalyzerBatchTable } from './AnalyzerBatchTable';
 import type { BatchResult } from './AnalyzerBatchTable';
 
 const ACCEPTED = '.flac,.mp3,.m4a,.ogg,.opus,.wav,.aiff,.alac';
+const MAX_CONCURRENT_ANALYSES = 3;
 
 export function AnalyzerBatch() {
   const [files, setFiles] = useState<File[]>([]);
@@ -54,9 +55,11 @@ export function AnalyzerBatch() {
       });
 
       try {
-        // The API expects a server-side path; we pass the file name as a proxy.
-        // In practice the server needs the full path — use file.name as fallback.
-        const path = (file as File & { path?: string }).path ?? file.name;
+        // file.path is injected by Wails/Electron; unavailable in plain browser context.
+        const path = (file as File & { path?: string }).path;
+        if (!path) {
+          throw new Error('Full path unavailable — batch analyzer requires the desktop app');
+        }
         const analysis = await Api.AnalyzeAudio(path);
         setResults((prev) => {
           const next = [...prev];
@@ -73,7 +76,7 @@ export function AnalyzerBatch() {
       }
     });
 
-    await runWithConcurrency(tasks, 3);
+    await runWithConcurrency(tasks, MAX_CONCURRENT_ANALYSES);
     setAnalyzing(false);
   };
 
@@ -92,15 +95,18 @@ export function AnalyzerBatch() {
 
       {/* Drop zone */}
       <div
+        role="button"
+        tabIndex={0}
         onDrop={handleDrop}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
+        onClick={() => inputRef.current?.click()}
+        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') inputRef.current?.click(); }}
         className="rounded-xl border-2 border-dashed p-10 flex flex-col items-center justify-center gap-3 cursor-pointer transition-colors"
         style={{
           borderColor: dragActive ? 'var(--color-accent)' : 'var(--color-border-subtle)',
           background: dragActive ? 'var(--color-accent-subtle)' : 'var(--color-bg-secondary)',
         }}
-        onClick={() => inputRef.current?.click()}
       >
         <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ color: 'var(--color-text-tertiary)' }}>
           <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
