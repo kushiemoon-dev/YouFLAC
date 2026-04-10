@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"encoding/base64"
 	"fmt"
 	"os"
@@ -79,6 +80,18 @@ func (s *Server) handleGetQueueItem(c *fiber.Ctx) error {
 		return c.Status(404).JSON(fiber.Map{"error": "Item not found"})
 	}
 	return c.JSON(item)
+}
+
+func (s *Server) handleGetItemLogs(c *fiber.Ctx) error {
+	id := c.Params("id")
+	if id == "" {
+		return c.Status(400).JSON(fiber.Map{"error": "id required"})
+	}
+	entries := core.GetItemLogs(id)
+	if entries == nil {
+		entries = []core.LogEntry{}
+	}
+	return c.JSON(entries)
 }
 
 func (s *Server) handleRemoveFromQueue(c *fiber.Ctx) error {
@@ -423,6 +436,18 @@ func (s *Server) handleGetVideoInfo(c *fiber.Ctx) error {
 	}
 
 	return c.JSON(info)
+}
+
+func (s *Server) handleVideoCheck(c *fiber.Ctx) error {
+	url := c.Query("url")
+	if url == "" {
+		return c.Status(400).JSON(fiber.Map{"error": "url required"})
+	}
+	res, err := core.CheckAvailable(url)
+	if err != nil {
+		return c.Status(400).JSON(fiber.Map{"error": err.Error(), "available": false})
+	}
+	return c.JSON(res)
 }
 
 func (s *Server) handleFindAudioMatch(c *fiber.Ctx) error {
@@ -807,4 +832,85 @@ func (s *Server) handleSearch(c *fiber.Ctx) error {
 	}
 
 	return c.JSON(results)
+}
+
+// FFmpeg status
+func (s *Server) handleFFmpegStatus(c *fiber.Ctx) error {
+	return c.JSON(core.DetectFFmpeg())
+}
+
+// FFmpeg install (async, progress broadcast via WebSocket)
+func (s *Server) handleFFmpegInstall(c *fiber.Ctx) error {
+	go func() {
+		ctx := context.Background()
+		err := core.InstallFFmpeg(ctx, func(p core.FFmpegProgress) {
+			s.wsHub.Broadcast(fiber.Map{"type": "ffmpeg_install", "progress": p})
+		})
+		if err != nil {
+			s.wsHub.Broadcast(fiber.Map{"type": "ffmpeg_install", "progress": core.FFmpegProgress{Stage: "error", Error: err.Error()}})
+		}
+	}()
+	return c.JSON(fiber.Map{"started": true})
+}
+
+func (s *Server) handlePlaylistLyricsBulk(c *fiber.Ctx) error {
+	var body struct {
+		Dir string `json:"dir"`
+	}
+	if err := c.BodyParser(&body); err != nil || body.Dir == "" {
+		return c.Status(400).JSON(fiber.Map{"error": "dir required"})
+	}
+	absDir, err := filepath.Abs(body.Dir)
+	if err != nil {
+		return c.Status(400).JSON(fiber.Map{"error": "invalid dir"})
+	}
+	outputDir := s.config.OutputDirectory
+	absOutput, err := filepath.Abs(outputDir)
+	if err != nil {
+		return c.Status(500).JSON(fiber.Map{"error": "server config error"})
+	}
+	if !strings.HasPrefix(absDir, absOutput+string(filepath.Separator)) {
+		return c.Status(403).JSON(fiber.Map{"error": "dir outside output directory"})
+	}
+	results, err := core.BulkFetchLyrics(absDir)
+	if err != nil {
+		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
+	}
+	summary := map[string]string{}
+	success, failed := 0, 0
+	for path, ferr := range results {
+		if ferr == nil {
+			success++
+			summary[path] = "ok"
+		} else {
+			failed++
+			summary[path] = ferr.Error()
+		}
+	}
+	return c.JSON(fiber.Map{
+		"success": success,
+		"failed":  failed,
+		"files":   summary,
+	})
+}
+
+func (s *Server) handleChannelAssets(c *fiber.Ctx) error {
+	var body struct {
+		URL string `json:"url"`
+	}
+	if err := c.BodyParser(&body); err != nil || body.URL == "" {
+		return c.Status(400).JSON(fiber.Map{"error": "url required"})
+	}
+	assets, err := core.GetChannelAssets(body.URL)
+	if err != nil {
+		return c.Status(502).JSON(fiber.Map{"error": err.Error()})
+	}
+	dir, err := core.DownloadChannelAssets(assets, s.config.OutputDirectory)
+	if err != nil {
+		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
+	}
+	return c.JSON(fiber.Map{
+		"assets": assets,
+		"dir":    dir,
+	})
 }
