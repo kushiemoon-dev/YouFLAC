@@ -439,6 +439,30 @@ export async function GetConvertFormats(): Promise<string[]> {
   return api<string[]>('/convert/formats');
 }
 
+export interface ConvertDirOptions {
+  dir: string;
+  targetFormat: string;
+  bitrate?: number;
+  sampleRate?: number;
+}
+
+export interface DirConvertResult {
+  sourcePath: string;
+  outputPath?: string;
+  error?: string;
+  done: boolean;
+  total?: number;
+  succeeded?: number;
+  failed?: number;
+}
+
+export async function ConvertDirectory(opts: ConvertDirOptions): Promise<{ success: boolean; message: string }> {
+  return api<{ success: boolean; message: string }>('/converter/directory', {
+    method: 'POST',
+    body: JSON.stringify(opts),
+  });
+}
+
 // ============== Search API ==============
 
 export async function SearchYouTube(query: string, limit?: number): Promise<VideoInfo[]> {
