@@ -128,6 +128,33 @@ function SettingRow({ label, description, children }: { label: string; descripti
   );
 }
 
+function UnsavedChangesModal({ onResolvePending }: { onResolvePending?: (confirmed: boolean) => void }) {
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center"
+      style={{ background: 'rgba(0,0,0,0.5)' }}
+      onClick={() => onResolvePending?.(false)}
+    >
+      <div
+        className="rounded-xl p-6 shadow-2xl max-w-sm w-full mx-4"
+        style={{ background: 'var(--color-bg-secondary)', border: '1px solid var(--color-border-subtle)' }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <h2 className="text-base font-semibold mb-2" style={{ color: 'var(--color-text-primary)' }}>
+          Unsaved changes
+        </h2>
+        <p className="text-sm mb-6" style={{ color: 'var(--color-text-secondary)' }}>
+          You have unsaved changes. Leave anyway?
+        </p>
+        <div className="flex gap-3 justify-end">
+          <button className="btn-ghost" onClick={() => onResolvePending?.(false)}>Stay</button>
+          <button className="btn-primary" onClick={() => onResolvePending?.(true)}>Leave</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function Settings({ pendingNavigate = null, onResolvePending, onRegisterGuard }: SettingsProps = {}) {
   const { config, loading, saving, saveConfig, updateField } = useSettings();
   const [defaultPath, setDefaultPath] = useState('');
@@ -139,41 +166,21 @@ export function Settings({ pendingNavigate = null, onResolvePending, onRegisterG
   }, []);
 
   useEffect(() => {
-    if (onRegisterGuard) {
-      onRegisterGuard(() => hasChanges);
-    }
+    onRegisterGuard?.(() => hasChanges);
+    return () => { onRegisterGuard?.(null!); };
   }, [hasChanges, onRegisterGuard]);
 
   if (loading || !config) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        {pendingNavigate !== null && (
-          <div
-            className="fixed inset-0 z-50 flex items-center justify-center"
-            style={{ background: 'rgba(0,0,0,0.5)' }}
-          >
-            <div
-              className="rounded-xl p-6 shadow-2xl max-w-sm w-full mx-4"
-              style={{ background: 'var(--color-bg-secondary)', border: '1px solid var(--color-border-subtle)' }}
-            >
-              <h2 className="text-base font-semibold mb-2" style={{ color: 'var(--color-text-primary)' }}>
-                Unsaved changes
-              </h2>
-              <p className="text-sm mb-6" style={{ color: 'var(--color-text-secondary)' }}>
-                You have unsaved changes. Leave anyway?
-              </p>
-              <div className="flex gap-3 justify-end">
-                <button className="btn-ghost" onClick={() => onResolvePending?.(false)}>Stay</button>
-                <button className="btn-primary" onClick={() => onResolvePending?.(true)}>Leave</button>
-              </div>
-            </div>
+      <>
+        <div className="min-h-screen flex items-center justify-center">
+          <div className="text-center">
+            <div className="animate-spin w-8 h-8 border-2 border-current border-t-transparent rounded-full mx-auto mb-4" style={{ color: 'var(--color-accent)' }} />
+            <p style={{ color: 'var(--color-text-secondary)' }}>Loading settings...</p>
           </div>
-        )}
-        <div className="text-center">
-          <div className="animate-spin w-8 h-8 border-2 border-current border-t-transparent rounded-full mx-auto mb-4" style={{ color: 'var(--color-accent)' }} />
-          <p style={{ color: 'var(--color-text-secondary)' }}>Loading settings...</p>
         </div>
-      </div>
+        {pendingNavigate !== null && <UnsavedChangesModal onResolvePending={onResolvePending} />}
+      </>
     );
   }
 
@@ -530,38 +537,7 @@ export function Settings({ pendingNavigate = null, onResolvePending, onRegisterG
       </div>
 
       {/* Unsaved changes confirmation dialog */}
-      {pendingNavigate !== null && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center"
-          style={{ background: 'rgba(0,0,0,0.5)' }}
-        >
-          <div
-            className="rounded-xl p-6 shadow-2xl max-w-sm w-full mx-4"
-            style={{ background: 'var(--color-bg-secondary)', border: '1px solid var(--color-border-subtle)' }}
-          >
-            <h2 className="text-base font-semibold mb-2" style={{ color: 'var(--color-text-primary)' }}>
-              Unsaved changes
-            </h2>
-            <p className="text-sm mb-6" style={{ color: 'var(--color-text-secondary)' }}>
-              You have unsaved changes. Leave anyway?
-            </p>
-            <div className="flex gap-3 justify-end">
-              <button
-                className="btn-ghost"
-                onClick={() => onResolvePending?.(false)}
-              >
-                Stay
-              </button>
-              <button
-                className="btn-primary"
-                onClick={() => onResolvePending?.(true)}
-              >
-                Leave
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {pendingNavigate !== null && <UnsavedChangesModal onResolvePending={onResolvePending} />}
 
       {/* Fixed Footer */}
       <div
