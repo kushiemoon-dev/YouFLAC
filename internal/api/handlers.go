@@ -936,13 +936,11 @@ func (s *Server) handleChannelFetch(c *fiber.Ctx) error {
 		MaxItems:      body.MaxItems,
 	}
 	var jobID string
-	count := 0
-	jobID = s.registry.StartJob(body.URL, opts, func(v core.VideoInfoLite) {
-		count++
+	jobID = s.registry.StartJob(body.URL, opts, func(jid string, v core.VideoInfoLite, n int) {
 		s.wsHub.Broadcast(map[string]interface{}{
 			"type":  "channel_fetch_progress",
-			"jobID": jobID,
-			"count": count,
+			"jobID": jid,
+			"count": n,
 			"total": -1,
 			"item":  v,
 		})
