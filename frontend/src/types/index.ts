@@ -2,7 +2,7 @@
 export * from '../lib/api';
 
 // Page navigation
-export type Page = 'home' | 'history' | 'settings' | 'files' | 'converter' | 'terminal' | 'about';
+export type Page = 'home' | 'history' | 'settings' | 'files' | 'converter' | 'terminal' | 'about' | 'resampler' | 'analyzer' | 'analyzer-batch';
 
 // Queue status mapping
 export type QueueStatus =

@@ -62,6 +62,18 @@ const HistoryIcon = () => (
   </svg>
 );
 
+const ResamplerIcon = () => (
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M2 12h4l3-9 4 18 3-9h6" />
+  </svg>
+);
+
+const AnalyzerIcon = () => (
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M2 12h2M6 8v8M10 5v14M14 8v8M18 10v4M22 12h0" />
+  </svg>
+);
+
 interface SidebarProps {
   activePage: Page;
   onNavigate: (page: Page) => void;
@@ -97,6 +109,8 @@ export function Sidebar({ activePage, onNavigate }: SidebarProps) {
     { id: 'history', icon: HistoryIcon, label: 'History', targetPage: 'history', iconClass: 'icon-history' },
     { id: 'files', icon: FolderIcon, label: 'Files', targetPage: 'files', iconClass: 'icon-files' },
     { id: 'converter', icon: ConverterIcon, label: 'Converter', targetPage: 'converter', iconClass: 'icon-converter' },
+    { id: 'resampler', icon: ResamplerIcon, label: 'Resampler', targetPage: 'resampler', iconClass: 'icon-resampler' },
+    { id: 'analyzer-batch', icon: AnalyzerIcon, label: 'Batch Analyzer', targetPage: 'analyzer-batch', iconClass: 'icon-analyzer-batch' },
   ];
 
   const bottomItems: { id: Page; icon: React.FC; label: string; iconClass: string }[] = [

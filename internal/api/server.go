@@ -131,11 +131,15 @@ func (s *Server) setupRoutes() {
 	// Converter routes
 	api.Post("/convert", s.handleConvert)
 	api.Get("/convert/formats", s.handleGetConvertFormats)
+	api.Post("/converter/directory", s.handleConvertDirectory)
 
 	// Analyzer routes
 	api.Post("/analyze", s.handleAnalyzeAudio)
 	api.Post("/analyze/spectrogram", s.handleGenerateSpectrogram)
 	api.Post("/analyze/waveform", s.handleGenerateWaveform)
+
+	// Resampler routes
+	api.Post("/resampler", s.handleResample)
 
 	// Lyrics routes
 	api.Get("/lyrics", s.handleFetchLyrics)
