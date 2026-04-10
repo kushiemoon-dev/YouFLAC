@@ -62,6 +62,12 @@ const HistoryIcon = () => (
   </svg>
 );
 
+const ResamplerIcon = () => (
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M2 12h4l3-9 4 18 3-9h6" />
+  </svg>
+);
+
 interface SidebarProps {
   activePage: Page;
   onNavigate: (page: Page) => void;
@@ -97,6 +103,7 @@ export function Sidebar({ activePage, onNavigate }: SidebarProps) {
     { id: 'history', icon: HistoryIcon, label: 'History', targetPage: 'history', iconClass: 'icon-history' },
     { id: 'files', icon: FolderIcon, label: 'Files', targetPage: 'files', iconClass: 'icon-files' },
     { id: 'converter', icon: ConverterIcon, label: 'Converter', targetPage: 'converter', iconClass: 'icon-converter' },
+    { id: 'resampler', icon: ResamplerIcon, label: 'Resampler', targetPage: 'resampler', iconClass: 'icon-resampler' },
   ];
 
   const bottomItems: { id: Page; icon: React.FC; label: string; iconClass: string }[] = [
