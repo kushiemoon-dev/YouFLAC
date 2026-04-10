@@ -7,6 +7,8 @@ interface HistoryItemProps {
   onRedownload: (id: string) => void;
   sourceColor: string;
   sourceLabel: string;
+  onArtistClick?: (artist: string) => void;
+  onAlbumClick?: (album: string) => void;
 }
 
 const DownloadIcon = () => (
@@ -44,7 +46,15 @@ const CheckIcon = () => (
   </svg>
 );
 
-export function HistoryItem({ entry, onDelete, onRedownload, sourceColor, sourceLabel }: HistoryItemProps) {
+export function HistoryItem({
+  entry,
+  onDelete,
+  onRedownload,
+  sourceColor,
+  sourceLabel,
+  onArtistClick,
+  onAlbumClick,
+}: HistoryItemProps) {
   const [redownloading, setRedownloading] = useState(false);
 
   const formatSize = (bytes: number) => {
@@ -128,6 +138,15 @@ export function HistoryItem({ entry, onDelete, onRedownload, sourceColor, source
           <h4 className="font-medium truncate" style={{ color: 'var(--color-text-primary)' }}>
             {entry.title || 'Unknown Title'}
           </h4>
+          {entry.explicit && (
+            <span
+              className="badge text-[10px] font-bold"
+              style={{ background: 'var(--color-warning)', color: 'var(--color-bg-primary)' }}
+              title="Explicit content"
+            >
+              E
+            </span>
+          )}
           {isError ? (
             <span
               className="flex items-center gap-1 px-2 py-0.5 rounded text-xs"
@@ -150,7 +169,35 @@ export function HistoryItem({ entry, onDelete, onRedownload, sourceColor, source
           )}
         </div>
         <div className="flex items-center gap-3 text-sm" style={{ color: 'var(--color-text-tertiary)' }}>
-          <span>{entry.artist || 'Unknown Artist'}</span>
+          {onArtistClick && entry.artist ? (
+            <button
+              type="button"
+              onClick={() => onArtistClick(entry.artist)}
+              className="hover:underline cursor-pointer bg-transparent border-none p-0"
+              style={{ color: 'inherit', font: 'inherit' }}
+            >
+              {entry.artist}
+            </button>
+          ) : (
+            <span>{entry.artist || 'Unknown Artist'}</span>
+          )}
+          {entry.album && (
+            <>
+              <span>•</span>
+              {onAlbumClick ? (
+                <button
+                  type="button"
+                  onClick={() => onAlbumClick(entry.album!)}
+                  className="hover:underline cursor-pointer bg-transparent border-none p-0"
+                  style={{ color: 'inherit', font: 'inherit' }}
+                >
+                  {entry.album}
+                </button>
+              ) : (
+                <span>{entry.album}</span>
+              )}
+            </>
+          )}
           {entry.duration && entry.duration > 0 && (
             <>
               <span>•</span>
