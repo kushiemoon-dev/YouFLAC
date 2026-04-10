@@ -5,8 +5,29 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"os/exec"
+	"path/filepath"
 	"testing"
 )
+
+// makeTempWAV creates a minimal silent WAV file via ffmpeg for testing.
+// Skips the test if ffmpeg is not available.
+func makeTempWAV(t *testing.T) string {
+	t.Helper()
+	tmp := t.TempDir()
+	out := filepath.Join(tmp, "test.wav")
+	cmd := exec.Command("ffmpeg", "-y", "-f", "lavfi",
+		"-i", "sine=frequency=440:sample_rate=44100:duration=0.1",
+		"-c:a", "pcm_s16le", out)
+	if err := cmd.Run(); err != nil {
+		t.Skipf("ffmpeg not available: %v", err)
+	}
+	if _, err := os.Stat(out); err != nil {
+		t.Skipf("ffmpeg produced no output: %v", err)
+	}
+	return out
+}
 
 func TestHandleResample_MissingBody(t *testing.T) {
 	s := newTestServer(t)
@@ -16,27 +37,38 @@ func TestHandleResample_MissingBody(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	// Empty inputPath/outputPath → 400
 	if resp.StatusCode != http.StatusBadRequest {
 		t.Errorf("expected 400, got %d", resp.StatusCode)
 	}
 }
 
 func TestHandleResample_InvalidSampleRate(t *testing.T) {
+	tmp := t.TempDir()
+
+	// Generate input WAV inside tmp so sandbox check passes.
+	inPath := filepath.Join(tmp, "in.wav")
+	cmd := exec.Command("ffmpeg", "-y", "-f", "lavfi",
+		"-i", "sine=frequency=440:sample_rate=44100:duration=0.1",
+		"-c:a", "pcm_s16le", inPath)
+	if err := cmd.Run(); err != nil {
+		t.Skipf("ffmpeg not available: %v", err)
+	}
+
 	s := newTestServer(t)
+	s.config.OutputDirectory = tmp
+
 	body, _ := json.Marshal(map[string]interface{}{
-		"inputPath":  "/tmp/test.wav",
-		"outputPath": "/tmp/out.flac",
-		"sampleRate": 99999,
+		"inputPath":  inPath,
+		"outputPath": filepath.Join(tmp, "out.flac"),
+		"sampleRate": 99999, // not in SupportedSampleRates → core returns error
 		"bitDepth":   16,
 		"format":     "flac",
 	})
 	req := httptest.NewRequest(http.MethodPost, "/api/resampler", bytes.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
-	resp, _ := s.app.Test(req, 5000)
-	// Resample will fail validation → 500 (after missing file check) or 500
-	// We just want it to not panic and return an error response
+	resp, _ := s.app.Test(req, 30000)
+	// AnalyzeAudio succeeds → core.Resample returns "unsupported sample rate" → 500
 	if resp.StatusCode == http.StatusOK {
-		t.Error("expected non-200 for invalid params")
+		t.Errorf("expected non-200 for unsupported sample rate, got 200")
 	}
 }
