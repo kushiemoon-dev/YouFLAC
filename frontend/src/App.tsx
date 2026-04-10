@@ -14,6 +14,7 @@ import { AnalyzerBatch } from './components/analyzer';
 import { applyAccentColor } from './hooks/useAccentColor';
 import { applyTheme } from './hooks/useTheme';
 import { setSoundEnabled } from './hooks/useSoundEffects';
+import { applyFont } from './hooks/useFont';
 import type { Page, AccentColor } from './types';
 import * as Api from './lib/api';
 
@@ -51,6 +52,10 @@ function App() {
         }
         // Set sound effects state
         setSoundEnabled(config.soundEffectsEnabled ?? true);
+        // Apply font
+        if (config.uiFont) {
+          applyFont(config.uiFont as string);
+        }
       })
       .catch(console.error);
   }, []);
