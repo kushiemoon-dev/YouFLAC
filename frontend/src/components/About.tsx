@@ -159,7 +159,7 @@ export function About() {
           </p>
 
           <span className="badge badge-accent mb-6">
-            Version {version || '0.1.0'}
+            Version {version || '3.2.0'}
           </span>
 
           <p
