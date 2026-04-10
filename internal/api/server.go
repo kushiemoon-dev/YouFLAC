@@ -21,6 +21,7 @@ type Server struct {
 	history   *core.History
 	fileIndex *core.FileIndex
 	wsHub     *WebSocketHub
+	registry  *core.ChannelJobRegistry
 }
 
 // NewServer creates a new API server instance
@@ -42,6 +43,7 @@ func NewServer(config *core.Config, queue *core.Queue, history *core.History, fi
 		history:   history,
 		fileIndex: fileIndex,
 		wsHub:     wsHub,
+		registry:  core.NewChannelJobRegistry(),
 	}
 
 	// Middleware
@@ -116,6 +118,9 @@ func (s *Server) setupRoutes() {
 
 	// Channel routes
 	api.Post("/channel/assets", s.handleChannelAssets)
+	api.Post("/channel/fetch", s.handleChannelFetch)
+	api.Post("/channel/fetch/:id/cancel", s.handleChannelFetchCancel)
+	api.Get("/channel/fetch/:id", s.handleChannelFetchStatus)
 
 	// Files routes
 	api.Get("/files", s.handleListFiles)
