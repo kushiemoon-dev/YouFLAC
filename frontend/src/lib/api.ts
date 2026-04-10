@@ -439,6 +439,30 @@ export async function GetConvertFormats(): Promise<string[]> {
   return api<string[]>('/convert/formats');
 }
 
+export interface ConvertDirOptions {
+  dir: string;
+  targetFormat: string;
+  bitrate?: number;
+  sampleRate?: number;
+}
+
+export interface DirConvertResult {
+  sourcePath: string;
+  outputPath?: string;
+  error?: string;
+  done: boolean;
+  total?: number;
+  succeeded?: number;
+  failed?: number;
+}
+
+export async function ConvertDirectory(opts: ConvertDirOptions): Promise<{ success: boolean; message: string }> {
+  return api<{ success: boolean; message: string }>('/converter/directory', {
+    method: 'POST',
+    body: JSON.stringify(opts),
+  });
+}
+
 // ============== Search API ==============
 
 export async function SearchYouTube(query: string, limit?: number): Promise<VideoInfo[]> {
@@ -561,6 +585,26 @@ export async function FetchAndEmbedLyrics(mediaPath: string, artist: string, tit
   if (mode === 'lrc' || mode === 'both') {
     await SaveLRCFile(mediaPath, lyrics);
   }
+}
+
+// ============== Resampler API ==============
+export interface ResampleOptions {
+  inputPath: string;
+  outputPath: string;
+  sampleRate: number;
+  bitDepth: number;
+  dither: boolean;
+  format: 'flac' | 'wav' | 'alac';
+}
+export interface ResampleResult {
+  success: boolean;
+  outputPath: string;
+  inputRate: number;
+  outputRate: number;
+  durationMs: number;
+}
+export async function Resample(opts: ResampleOptions): Promise<ResampleResult> {
+  return api<ResampleResult>('/resampler', { method: 'POST', body: JSON.stringify(opts) });
 }
 
 // ============== Image API ==============
