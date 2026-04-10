@@ -437,6 +437,18 @@ func (s *Server) handleGetVideoInfo(c *fiber.Ctx) error {
 	return c.JSON(info)
 }
 
+func (s *Server) handleVideoCheck(c *fiber.Ctx) error {
+	url := c.Query("url")
+	if url == "" {
+		return c.Status(400).JSON(fiber.Map{"error": "url required"})
+	}
+	res, err := core.CheckAvailable(url)
+	if err != nil {
+		return c.Status(400).JSON(fiber.Map{"error": err.Error(), "available": false})
+	}
+	return c.JSON(res)
+}
+
 func (s *Server) handleFindAudioMatch(c *fiber.Ctx) error {
 	var videoInfo core.VideoInfo
 	if err := c.BodyParser(&videoInfo); err != nil {
