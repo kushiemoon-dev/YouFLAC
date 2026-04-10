@@ -860,7 +860,19 @@ func (s *Server) handlePlaylistLyricsBulk(c *fiber.Ctx) error {
 	if err := c.BodyParser(&body); err != nil || body.Dir == "" {
 		return c.Status(400).JSON(fiber.Map{"error": "dir required"})
 	}
-	results, err := core.BulkFetchLyrics(body.Dir)
+	absDir, err := filepath.Abs(body.Dir)
+	if err != nil {
+		return c.Status(400).JSON(fiber.Map{"error": "invalid dir"})
+	}
+	outputDir := s.config.OutputDirectory
+	absOutput, err := filepath.Abs(outputDir)
+	if err != nil {
+		return c.Status(500).JSON(fiber.Map{"error": "server config error"})
+	}
+	if !strings.HasPrefix(absDir, absOutput+string(filepath.Separator)) {
+		return c.Status(403).JSON(fiber.Map{"error": "dir outside output directory"})
+	}
+	results, err := core.BulkFetchLyrics(absDir)
 	if err != nil {
 		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
 	}
