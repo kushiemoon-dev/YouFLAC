@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react'
 import { URLInput } from './URLInput'
 
 // Mock Api module
@@ -7,6 +7,19 @@ vi.mock('../../lib/api', () => ({
   GetVideoInfo: vi.fn().mockResolvedValue({ url: 'https://yt.com/watch?v=abc', title: 'T', artist: 'A', duration: 120, thumbnail: '' }),
   AddPlaylistToQueue: vi.fn().mockResolvedValue([]),
 }))
+
+describe('URLInput placeholder rotation', () => {
+  it('cycles placeholder after interval', () => {
+    vi.useFakeTimers()
+    const onAdd = vi.fn().mockResolvedValue(undefined)
+    render(<URLInput onAdd={onAdd} />)
+    const input = screen.getByPlaceholderText('Paste a YouTube video URL...')
+    expect(input).toBeInTheDocument()
+    act(() => { vi.advanceTimersByTime(3000) })
+    expect(screen.getByPlaceholderText('Paste a YouTube playlist URL...')).toBeInTheDocument()
+    vi.useRealTimers()
+  })
+})
 
 describe('URLInput channel detection', () => {
   const onAdd = vi.fn().mockResolvedValue(undefined)
