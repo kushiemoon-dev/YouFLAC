@@ -652,6 +652,19 @@ export async function OpenConfigFolder(): Promise<void> {
   await api<void>('/system/open-config-folder', { method: 'POST' });
 }
 
+export interface UpdateCheckResult {
+  currentVersion: string;
+  latestVersion: string;
+  hasUpdate: boolean;
+  releaseUrl: string;
+}
+
+export async function CheckForUpdates(): Promise<UpdateCheckResult> {
+  const res = await fetch('/api/system/update-check');
+  if (!res.ok) throw new Error('update check failed');
+  return res.json();
+}
+
 // ============== Preview API ==============
 
 // Returns the URL for streaming a short audio preview (OGG/Vorbis).
