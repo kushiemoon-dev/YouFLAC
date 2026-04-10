@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { QueueItem as QueueItemType, RetryOverrideRequest } from '../../lib/api';
-import { retryWithOverride } from '../../lib/api';
+import { retryWithOverride, RetryQueueItemWithSource } from '../../lib/api';
 import { ProgressBar } from './ProgressBar';
 import { EditMetadataModal } from './EditMetadataModal';
 import type { QueueStatus } from '../../types';
@@ -69,6 +69,12 @@ const FileTextIcon = () => (
   </svg>
 );
 
+const WrenchIcon = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" />
+  </svg>
+);
+
 function getStatusBadge(status: QueueStatus, stage?: string): { label: string; className: string } {
   // Detect skipped items (real status or legacy stage-based)
   if (status === 'skipped' || (status === 'complete' && stage?.includes('Skipped'))) {
@@ -123,6 +129,13 @@ export function QueueItem({
   const [showDiagnostics, setShowDiagnostics] = useState(false);
   const hasDiagnostics = item.matchDiagnostics || (item.matchCandidates && item.matchCandidates.length > 0);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [showFixForm, setShowFixForm] = useState(false);
+  const [fixSource, setFixSource] = useState('auto');
+
+  function handleFixRetry() {
+    RetryQueueItemWithSource(item.id, fixSource).catch(() => {});
+    setShowFixForm(false);
+  }
 
   function handleRetryOverride(id: string, override: RetryOverrideRequest) {
     retryWithOverride(id, override).catch(() => {
@@ -251,17 +264,45 @@ export function QueueItem({
           {status === 'error' && item.error && (
             <div className="mt-2">
               <p className="text-sm" style={{ color: 'var(--color-error)' }}>
-                {item.error}
+                {item.error.length > 120 ? item.error.slice(0, 120) + '…' : item.error}
               </p>
+              {item.matchDiagnostics?.sourcesTried && item.matchDiagnostics.sourcesTried.length > 0 && (
+                <p className="text-xs mt-0.5" style={{ color: 'var(--color-text-tertiary)' }}>
+                  Tried: {item.matchDiagnostics.sourcesTried.join(', ')}
+                </p>
+              )}
               {item.matchCandidates && item.matchCandidates.length > 0 && (
                 <p className="text-xs mt-0.5" style={{ color: 'var(--color-text-tertiary)' }}>
                   {item.matchCandidates.length} candidate{item.matchCandidates.length > 1 ? 's' : ''} found — click &quot;Edit &amp; Retry&quot; to select
                 </p>
               )}
-              {item.matchDiagnostics?.failureReason && !item.matchCandidates?.length && (
+              {item.matchDiagnostics?.failureReason && !item.matchCandidates?.length && !item.matchDiagnostics?.sourcesTried?.length && (
                 <p className="text-xs mt-0.5" style={{ color: 'var(--color-text-tertiary)' }}>
                   {item.matchDiagnostics.failureReason}
                 </p>
+              )}
+              {showFixForm && (
+                <div className="flex items-center gap-2 mt-2">
+                  <select
+                    value={fixSource}
+                    onChange={e => setFixSource(e.target.value)}
+                    className="text-xs rounded px-1 py-0.5"
+                    style={{ background: 'var(--color-bg-secondary)', color: 'var(--color-text-primary)', border: '1px solid var(--color-border-subtle)' }}
+                  >
+                    <option value="auto">auto</option>
+                    <option value="tidal">tidal</option>
+                    <option value="qobuz">qobuz</option>
+                    <option value="amazon">amazon</option>
+                    <option value="lucida">lucida</option>
+                  </select>
+                  <button
+                    type="button"
+                    className="btn-icon text-xs px-2"
+                    onClick={handleFixRetry}
+                  >
+                    Retry
+                  </button>
+                </div>
               )}
             </div>
           )}
@@ -322,6 +363,17 @@ export function QueueItem({
                   title="Retry"
                 >
                   <RefreshIcon />
+                </button>
+              )}
+
+              {/* Fix button for errors — retry with forced source */}
+              {status === 'error' && (
+                <button
+                  className="btn-icon"
+                  onClick={() => setShowFixForm(v => !v)}
+                  title="Fix — retry with source"
+                >
+                  <WrenchIcon />
                 </button>
               )}
 
