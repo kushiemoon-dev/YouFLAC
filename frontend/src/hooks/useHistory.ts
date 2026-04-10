@@ -2,12 +2,12 @@ import { useState, useEffect, useCallback } from 'react';
 import * as Api from '../lib/api';
 import type { HistoryEntry, HistoryStats } from '../lib/api';
 
-export function useHistory() {
+export function useHistory(initial?: { query?: string; source?: string }) {
   const [entries, setEntries] = useState<HistoryEntry[]>([]);
   const [stats, setStats] = useState<HistoryStats | null>(null);
   const [loading, setLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [sourceFilter, setSourceFilter] = useState<string>('');
+  const [searchQuery, setSearchQuery] = useState(initial?.query ?? '');
+  const [sourceFilter, setSourceFilter] = useState<string>(initial?.source ?? '');
   const [statusFilter, setStatusFilter] = useState<string>('');
 
   // Fetch history
@@ -45,6 +45,13 @@ export function useHistory() {
 
   // Search
   const search = useCallback((query: string) => {
+    setSearchQuery(query);
+    setSourceFilter('');
+    setStatusFilter('');
+  }, []);
+
+  // Imperative search trigger (alias for deep-linking)
+  const searchFor = useCallback((query: string) => {
     setSearchQuery(query);
     setSourceFilter('');
     setStatusFilter('');
@@ -135,6 +142,7 @@ export function useHistory() {
     sourceFilter,
     statusFilter,
     search,
+    searchFor,
     filterBySource,
     filterByStatus,
     clearFilters,
