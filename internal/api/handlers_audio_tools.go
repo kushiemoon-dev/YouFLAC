@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -62,6 +63,46 @@ func (s *Server) handleConvertDirectory(c *fiber.Ctx) error {
 	}
 
 	return c.JSON(fiber.Map{"success": true, "message": "conversion complete"})
+}
+
+// handleVideoPreview streams up to `seconds` (default 30, max 60) seconds of audio
+// from a YouTube URL in OGG/Vorbis format suitable for browser <audio> playback.
+// GET /api/video/preview?url=<youtube_url>&seconds=30
+func (s *Server) handleVideoPreview(c *fiber.Ctx) error {
+	videoURL := c.Query("url")
+	if videoURL == "" {
+		return c.Status(400).JSON(fiber.Map{"error": "url is required"})
+	}
+
+	// Validate it is a YouTube URL
+	if _, err := core.ParseYouTubeURL(videoURL); err != nil {
+		return c.Status(400).JSON(fiber.Map{"error": "invalid YouTube URL: " + err.Error()})
+	}
+
+	seconds := 30
+	if raw := c.Query("seconds"); raw != "" {
+		n, err := strconv.Atoi(raw)
+		if err != nil {
+			return c.Status(400).JSON(fiber.Map{"error": "seconds must be an integer"})
+		}
+		if n > 60 {
+			return c.Status(422).JSON(fiber.Map{"error": "seconds must not exceed 60"})
+		}
+		if n <= 0 {
+			return c.Status(422).JSON(fiber.Map{"error": "seconds must be positive"})
+		}
+		seconds = n
+	}
+
+	reader, err := core.PreviewAudio(c.Context(), videoURL, seconds)
+	if err != nil {
+		return c.Status(422).JSON(fiber.Map{"error": err.Error()})
+	}
+	defer reader.Close()
+
+	c.Set("Content-Type", "audio/ogg")
+	c.Set("Cache-Control", "no-store")
+	return c.SendStream(reader)
 }
 
 func (s *Server) handleResample(c *fiber.Ctx) error {

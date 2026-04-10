@@ -115,6 +115,7 @@ func (s *Server) setupRoutes() {
 	api.Get("/video/info", s.handleGetVideoInfo)
 	api.Get("/video/check", s.handleVideoCheck)
 	api.Post("/video/match", s.handleFindAudioMatch)
+	api.Get("/video/preview", s.handleVideoPreview)
 
 	// Channel routes
 	api.Post("/channel/assets", s.handleChannelAssets)

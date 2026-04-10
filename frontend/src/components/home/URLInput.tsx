@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect } from 'react';
 import * as Api from '../../lib/api';
+import { GetPreviewURL } from '../../lib/api';
 import type { VideoInfo } from '../../lib/api';
 import { classifyURL } from '../../utils/urlDetect';
 import { ChannelDownloadModal } from './ChannelDownloadModal';
@@ -92,6 +93,7 @@ export function URLInput({ onAdd }: URLInputProps) {
   const [previewVideoId, setPreviewVideoId] = useState<string | null>(null);
   const [channelModalOpen, setChannelModalOpen] = useState(false);
   const [channelUrl, setChannelUrl] = useState('');
+  const [showAudioPreview, setShowAudioPreview] = useState(false);
 
   useEffect(() => {
     const id = setInterval(() => {
@@ -218,7 +220,7 @@ export function URLInput({ onAdd }: URLInputProps) {
             <input
               type="url"
               value={url}
-              onChange={(e) => setUrl(e.target.value)}
+              onChange={(e) => { setUrl(e.target.value); setShowAudioPreview(false); }}
               onKeyDown={handleKeyDown}
               placeholder={PLACEHOLDERS[placeholderIndex]}
               className="w-full pr-12"
@@ -237,6 +239,16 @@ export function URLInput({ onAdd }: URLInputProps) {
               </button>
             )}
           </div>
+          {classifyURL(url.trim()) === 'video' && !loading && (
+            <button
+              className="btn-secondary flex items-center gap-2"
+              onClick={() => setShowAudioPreview((v) => !v)}
+              title="Preview 30s audio"
+            >
+              <PlayIcon />
+              Preview
+            </button>
+          )}
           <button
             className="btn-primary flex items-center gap-2"
             onClick={handleURLSubmit}
@@ -280,6 +292,18 @@ export function URLInput({ onAdd }: URLInputProps) {
             {loading ? 'Searching...' : 'Search'}
           </button>
         </div>
+      )}
+
+      {/* Audio preview player */}
+      {activeTab === 'url' && showAudioPreview && classifyURL(url.trim()) === 'video' && (
+        <audio
+          key={url}
+          src={GetPreviewURL(url.trim())}
+          controls
+          preload="none"
+          className="w-full"
+          style={{ height: '40px' }}
+        />
       )}
 
       {/* Error message */}
