@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Header } from './layout/Header';
 import * as Api from '../lib/api';
 
@@ -37,8 +37,9 @@ const CopyIcon = () => (
   </svg>
 );
 
-const BTC_ADDRESS = 'bc1qyouflac000000000000000000000000000000';
-const BTC_SHORT = 'bc1qyouflac…0000';
+// Donation addresses — update before release
+const BTC_ADDRESS: string | null = null;
+const BTC_SHORT = 'coming soon';
 
 const FAQ_ITEMS = [
   {
@@ -68,24 +69,45 @@ export function About() {
   const [openFaq, setOpenFaq] = useState<string | null>(null);
   const [githubModalOpen, setGithubModalOpen] = useState(false);
   const [btcCopied, setBtcCopied] = useState(false);
+  const btcTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     Api.GetAppVersion().then(setVersion).catch(console.error);
+    return () => {
+      if (btcTimerRef.current !== null) clearTimeout(btcTimerRef.current);
+    };
   }, []);
 
   function toggleFaq(id: string) {
     setOpenFaq((prev) => (prev === id ? null : id));
   }
 
-  function handleCopyBtc() {
-    navigator.clipboard.writeText(BTC_ADDRESS).then(() => {
+  async function handleCopyBtc() {
+    if (!BTC_ADDRESS) return;
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(BTC_ADDRESS);
+      } else {
+        const ta = document.createElement('textarea');
+        ta.value = BTC_ADDRESS;
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.focus();
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+      }
       setBtcCopied(true);
-      setTimeout(() => setBtcCopied(false), 2000);
-    });
+      if (btcTimerRef.current !== null) clearTimeout(btcTimerRef.current);
+      btcTimerRef.current = setTimeout(() => setBtcCopied(false), 2000);
+    } catch {
+      // clipboard unavailable — silent fail
+    }
   }
 
   function handleOpenGithub() {
-    window.open('https://github.com/kushie/youflac', '_blank');
+    window.open('https://github.com/kushiemoon-dev/youflac', '_blank');
     setGithubModalOpen(false);
   }
 
@@ -244,30 +266,32 @@ export function About() {
             If this tool saves you time, consider supporting development.
           </p>
           <div className="flex flex-wrap items-center gap-3">
-            <button
-              className="btn-primary flex items-center gap-2"
-              onClick={() => window.open('https://ko-fi.com/username', '_blank')}
+            <span
+              className="btn-secondary flex items-center gap-2 opacity-50 cursor-not-allowed"
+              title="Ko-fi link coming soon"
             >
               <HeartIcon />
               Ko-fi
-            </button>
+            </span>
             <div
               className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-mono"
               style={{ background: 'var(--color-bg-tertiary)', color: 'var(--color-text-secondary)' }}
             >
               <span>BTC: {BTC_SHORT}</span>
-              <button
-                className="btn-icon"
-                onClick={handleCopyBtc}
-                title="Copy BTC address"
-                style={{ color: 'var(--color-text-tertiary)' }}
-              >
-                {btcCopied ? (
-                  <span className="text-xs" style={{ color: 'var(--color-success)' }}>Copied!</span>
-                ) : (
-                  <CopyIcon />
-                )}
-              </button>
+              {BTC_ADDRESS && (
+                <button
+                  className="btn-icon"
+                  onClick={handleCopyBtc}
+                  title="Copy BTC address"
+                  style={{ color: 'var(--color-text-tertiary)' }}
+                >
+                  {btcCopied ? (
+                    <span className="text-xs" style={{ color: 'var(--color-success)' }}>Copied!</span>
+                  ) : (
+                    <CopyIcon />
+                  )}
+                </button>
+              )}
             </div>
           </div>
         </div>
