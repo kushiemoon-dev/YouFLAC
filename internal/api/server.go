@@ -110,6 +110,7 @@ func (s *Server) setupRoutes() {
 	// Video/URL routes
 	api.Post("/video/parse", s.handleParseURL)
 	api.Get("/video/info", s.handleGetVideoInfo)
+	api.Get("/video/check", s.handleVideoCheck)
 	api.Post("/video/match", s.handleFindAudioMatch)
 
 	// Files routes
