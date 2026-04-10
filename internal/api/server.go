@@ -80,6 +80,7 @@ func (s *Server) setupRoutes() {
 	api.Post("/queue/pause-all", s.handlePauseAll)
 	api.Post("/queue/resume-all", s.handleResumeAll)
 	api.Get("/queue/:id", s.handleGetQueueItem)
+	api.Get("/queue/:id/logs", s.handleGetItemLogs)
 	api.Delete("/queue/:id", s.handleRemoveFromQueue)
 	api.Post("/queue/:id/cancel", s.handleCancelQueueItem)
 	api.Post("/queue/:id/pause", s.handlePauseQueueItem)
