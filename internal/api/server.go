@@ -137,6 +137,9 @@ func (s *Server) setupRoutes() {
 	api.Post("/analyze/spectrogram", s.handleGenerateSpectrogram)
 	api.Post("/analyze/waveform", s.handleGenerateWaveform)
 
+	// Resampler routes
+	api.Post("/resampler", s.handleResample)
+
 	// Lyrics routes
 	api.Get("/lyrics", s.handleFetchLyrics)
 	api.Post("/lyrics/embed", s.handleEmbedLyrics)
