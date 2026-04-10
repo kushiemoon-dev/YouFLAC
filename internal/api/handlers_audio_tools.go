@@ -96,7 +96,12 @@ func (s *Server) handleVideoPreview(c *fiber.Ctx) error {
 
 	reader, err := core.PreviewAudio(c.Context(), videoURL, seconds)
 	if err != nil {
-		return c.Status(422).JSON(fiber.Map{"error": err.Error()})
+		msg := err.Error()
+		// Dependency missing → 503 so operators can distinguish from bad input
+		if strings.Contains(msg, "install yt-dlp") || strings.Contains(msg, "install ffmpeg") {
+			return c.Status(503).JSON(fiber.Map{"error": msg})
+		}
+		return c.Status(422).JSON(fiber.Map{"error": msg})
 	}
 	defer reader.Close()
 
