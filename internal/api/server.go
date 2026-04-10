@@ -80,6 +80,7 @@ func (s *Server) setupRoutes() {
 	api.Post("/queue/pause-all", s.handlePauseAll)
 	api.Post("/queue/resume-all", s.handleResumeAll)
 	api.Get("/queue/:id", s.handleGetQueueItem)
+	api.Get("/queue/:id/logs", s.handleGetItemLogs)
 	api.Delete("/queue/:id", s.handleRemoveFromQueue)
 	api.Post("/queue/:id/cancel", s.handleCancelQueueItem)
 	api.Post("/queue/:id/pause", s.handlePauseQueueItem)
@@ -89,6 +90,7 @@ func (s *Server) setupRoutes() {
 
 	// Playlist routes
 	api.Post("/playlist", s.handleAddPlaylistToQueue)
+	api.Post("/playlist/lyrics/bulk", s.handlePlaylistLyricsBulk)
 
 	// Config routes
 	api.Get("/config", s.handleGetConfig)
@@ -109,7 +111,11 @@ func (s *Server) setupRoutes() {
 	// Video/URL routes
 	api.Post("/video/parse", s.handleParseURL)
 	api.Get("/video/info", s.handleGetVideoInfo)
+	api.Get("/video/check", s.handleVideoCheck)
 	api.Post("/video/match", s.handleFindAudioMatch)
+
+	// Channel routes
+	api.Post("/channel/assets", s.handleChannelAssets)
 
 	// Files routes
 	api.Get("/files", s.handleListFiles)
@@ -139,6 +145,10 @@ func (s *Server) setupRoutes() {
 
 	// Service status
 	api.Get("/services/status", s.handleServicesStatus)
+
+	// System / ffmpeg
+	api.Get("/system/ffmpeg/status", s.handleFFmpegStatus)
+	api.Post("/system/ffmpeg/install", s.handleFFmpegInstall)
 
 	// Version
 	api.Get("/version", s.handleGetVersion)

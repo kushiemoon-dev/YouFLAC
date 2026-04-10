@@ -1,7 +1,17 @@
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import type { QueueItem as QueueItemType, QueueStats } from '../../lib/api';
 import { QueueItem } from './QueueItem';
 import { ConfirmDialog } from '../ui/ConfirmDialog';
+import { DebugLogsModal } from './DebugLogsModal';
+import {
+  useQueueFilter,
+  type QueueFilter,
+  type QueueFilterStatus,
+  type QueueFilterSource,
+  type QueueFilterDate,
+  type QueueSort,
+  type QueueSortKey,
+} from '../../hooks/useQueueFilter';
 
 // Icons
 const TrashIcon = () => (
@@ -45,76 +55,39 @@ const SortIcon = () => (
   </svg>
 );
 
-type FilterOption = 'all' | 'pending' | 'downloading' | 'completed' | 'failed' | 'cancelled';
-type SortOption = 'default' | 'name' | 'status' | 'date' | 'failed-first';
-
-const filterLabels: Record<FilterOption, string> = {
+const statusLabels: Record<QueueFilterStatus, string> = {
   all: 'All',
   pending: 'Pending',
   downloading: 'Active',
   completed: 'Completed',
   failed: 'Failed',
+  skipped: 'Skipped',
+  paused: 'Paused',
   cancelled: 'Cancelled',
 };
 
-const sortLabels: Record<SortOption, string> = {
+const sourceLabels: Record<QueueFilterSource, string> = {
+  all: 'All sources',
+  tidal: 'Tidal',
+  qobuz: 'Qobuz',
+  amazon: 'Amazon',
+  lucida: 'Lucida',
+  deezer: 'Deezer',
+};
+
+const dateLabels: Record<QueueFilterDate, string> = {
+  all: 'Any time',
+  today: 'Today',
+  week: 'This week',
+};
+
+const sortLabels: Record<QueueSortKey, string> = {
   default: 'Queue Order',
-  name: 'Name',
-  status: 'Status',
   date: 'Date Added',
-  'failed-first': 'Failed First',
+  status: 'Status',
+  source: 'Source',
+  progress: 'Progress',
 };
-
-const statusOrder: Record<string, number> = {
-  error: 0,
-  downloading_video: 1,
-  downloading_audio: 2,
-  fetching_info: 3,
-  muxing: 4,
-  organizing: 5,
-  pending: 6,
-  paused: 7,
-  complete: 8,
-  cancelled: 9,
-};
-
-function matchesFilter(item: QueueItemType, filter: FilterOption): boolean {
-  switch (filter) {
-    case 'all':
-      return true;
-    case 'pending':
-      return item.status === 'pending' || item.status === 'paused';
-    case 'downloading':
-      return ['fetching_info', 'downloading_video', 'downloading_audio', 'muxing', 'organizing'].includes(item.status);
-    case 'completed':
-      return item.status === 'complete';
-    case 'failed':
-      return item.status === 'error';
-    case 'cancelled':
-      return item.status === 'cancelled';
-  }
-}
-
-function sortItems(items: QueueItemType[], sort: SortOption): QueueItemType[] {
-  if (sort === 'default') return items;
-
-  return [...items].sort((a, b) => {
-    switch (sort) {
-      case 'name':
-        return (a.title || '').localeCompare(b.title || '');
-      case 'status':
-        return (statusOrder[a.status] ?? 99) - (statusOrder[b.status] ?? 99);
-      case 'date':
-        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-      case 'failed-first':
-        if (a.status === 'error' && b.status !== 'error') return -1;
-        if (b.status === 'error' && a.status !== 'error') return 1;
-        return 0;
-      default:
-        return 0;
-    }
-  });
-}
 
 interface QueueListProps {
   items: QueueItemType[];
@@ -126,6 +99,9 @@ interface QueueListProps {
   onClearAll: () => void;
   onPauseAll?: () => void;
   onResumeAll?: () => void;
+  onArtistClick?: (artist: string) => void;
+  onAlbumClick?: (album: string) => void;
+  onViewLogs?: (id: string) => void;
 }
 
 export function QueueList({
@@ -138,15 +114,25 @@ export function QueueList({
   onClearAll,
   onPauseAll,
   onResumeAll,
+  onArtistClick,
+  onAlbumClick,
+  onViewLogs,
 }: QueueListProps) {
-  const [filter, setFilter] = useState<FilterOption>('all');
-  const [sort, setSort] = useState<SortOption>('default');
+  const [filter, setFilter] = useState<QueueFilter>({
+    status: 'all',
+    source: 'all',
+    dateRange: 'all',
+  });
+  const [sort, setSort] = useState<QueueSort>({ by: 'default', dir: 'desc' });
   const [confirmAction, setConfirmAction] = useState<'clearAll' | 'clearCompleted' | null>(null);
+  const [logsItemId, setLogsItemId] = useState<string | null>(null);
 
-  const filteredAndSorted = useMemo(() => {
-    const filtered = items.filter((item) => matchesFilter(item, filter));
-    return sortItems(filtered, sort);
-  }, [items, filter, sort]);
+  const handleViewLogs = (id: string) => {
+    setLogsItemId(id);
+    onViewLogs?.(id);
+  };
+
+  const filteredAndSorted = useQueueFilter(items, filter, sort);
 
   const hasItems = items.length > 0;
   const hasActive = stats && (stats.active > 0 || stats.pending > 0);
@@ -247,38 +233,63 @@ export function QueueList({
 
       {/* Filter + Sort bar */}
       {hasItems && (
-        <div className="flex items-center justify-between gap-4">
-          {/* Filter pills */}
+        <div className="flex items-center justify-between gap-4 flex-wrap">
+          {/* Status pills */}
           <div className="flex items-center gap-1.5 flex-wrap">
-            {(Object.keys(filterLabels) as FilterOption[]).map((f) => (
+            {(Object.keys(statusLabels) as QueueFilterStatus[]).map((s) => (
               <button
-                key={f}
-                className={`px-3 py-1 text-xs rounded-full transition-colors ${filter === f ? 'font-medium' : ''}`}
+                key={s}
+                className={`px-3 py-1 text-xs rounded-full transition-colors ${filter.status === s ? 'font-medium' : ''}`}
                 style={{
-                  background: filter === f ? 'var(--color-accent)' : 'var(--color-bg-tertiary)',
-                  color: filter === f ? 'white' : 'var(--color-text-secondary)',
+                  background: filter.status === s ? 'var(--color-accent)' : 'var(--color-bg-tertiary)',
+                  color: filter.status === s ? 'white' : 'var(--color-text-secondary)',
                 }}
-                onClick={() => setFilter(f)}
+                onClick={() => setFilter((f) => ({ ...f, status: s }))}
               >
-                {filterLabels[f]}
-                {f === 'failed' && stats?.failed ? ` (${stats.failed})` : ''}
+                {statusLabels[s]}
+                {s === 'failed' && stats?.failed ? ` (${stats.failed})` : ''}
               </button>
             ))}
           </div>
 
-          {/* Sort dropdown */}
-          <div className="flex items-center gap-1.5">
-            <SortIcon />
+          {/* Source + Date + Sort selects */}
+          <div className="flex items-center gap-3">
             <select
-              value={sort}
-              onChange={(e) => setSort(e.target.value as SortOption)}
+              value={filter.source}
+              onChange={(e) => setFilter((f) => ({ ...f, source: e.target.value as QueueFilterSource }))}
               className="text-xs bg-transparent border-none outline-none cursor-pointer"
               style={{ color: 'var(--color-text-secondary)' }}
+              aria-label="Filter by source"
             >
-              {(Object.keys(sortLabels) as SortOption[]).map((s) => (
-                <option key={s} value={s}>{sortLabels[s]}</option>
+              {(Object.keys(sourceLabels) as QueueFilterSource[]).map((s) => (
+                <option key={s} value={s}>{sourceLabels[s]}</option>
               ))}
             </select>
+            <select
+              value={filter.dateRange}
+              onChange={(e) => setFilter((f) => ({ ...f, dateRange: e.target.value as QueueFilterDate }))}
+              className="text-xs bg-transparent border-none outline-none cursor-pointer"
+              style={{ color: 'var(--color-text-secondary)' }}
+              aria-label="Filter by date"
+            >
+              {(Object.keys(dateLabels) as QueueFilterDate[]).map((d) => (
+                <option key={d} value={d}>{dateLabels[d]}</option>
+              ))}
+            </select>
+            <div className="flex items-center gap-1.5">
+              <SortIcon />
+              <select
+                value={sort.by}
+                onChange={(e) => setSort((s) => ({ ...s, by: e.target.value as QueueSortKey }))}
+                className="text-xs bg-transparent border-none outline-none cursor-pointer"
+                style={{ color: 'var(--color-text-secondary)' }}
+                aria-label="Sort queue"
+              >
+                {(Object.keys(sortLabels) as QueueSortKey[]).map((s) => (
+                  <option key={s} value={s}>{sortLabels[s]}</option>
+                ))}
+              </select>
+            </div>
           </div>
         </div>
       )}
@@ -296,6 +307,9 @@ export function QueueList({
                   item={item}
                   onCancel={onCancel}
                   onRemove={onRemove}
+                  onArtistClick={onArtistClick}
+                  onAlbumClick={onAlbumClick}
+                  onViewLogs={handleViewLogs}
                 />
               </div>
             ))}
@@ -369,6 +383,13 @@ export function QueueList({
           confirmLabel="Clear"
           onConfirm={() => { onClearCompleted(); setConfirmAction(null); }}
           onCancel={() => setConfirmAction(null)}
+        />
+      )}
+
+      {logsItemId && (
+        <DebugLogsModal
+          itemId={logsItemId}
+          onClose={() => setLogsItemId(null)}
         />
       )}
     </div>
