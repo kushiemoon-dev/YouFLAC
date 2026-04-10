@@ -46,6 +46,13 @@ export function useQueue() {
         case 'removed':
           setItems(prev => prev.filter(item => item.id !== event.itemId));
           break;
+        case 'skipped':
+          if (event.item) {
+            setItems(prev =>
+              prev.map(item => item.id === event.itemId ? event.item! : item)
+            );
+          }
+          break;
         case 'completed':
           if (event.item) {
             setItems(prev =>
