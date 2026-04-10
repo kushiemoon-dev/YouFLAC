@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import * as Api from '../../lib/api';
 import type { VideoInfo } from '../../lib/api';
 import { classifyURL } from '../../utils/urlDetect';
@@ -71,8 +71,17 @@ interface URLInputProps {
   onAdd: (videoUrl: string, spotifyUrl?: string) => Promise<void>;
 }
 
+const PLACEHOLDERS = [
+  'Paste a YouTube video URL...',
+  'Paste a YouTube playlist URL...',
+  'Paste a YouTube channel URL...',
+  'Paste a YouTube Shorts URL...',
+  'Paste a YouTube Music URL...',
+];
+
 export function URLInput({ onAdd }: URLInputProps) {
   const [activeTab, setActiveTab] = useState<Tab>('url');
+  const [placeholderIndex, setPlaceholderIndex] = useState(0);
   const [url, setUrl] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(false);
@@ -83,6 +92,13 @@ export function URLInput({ onAdd }: URLInputProps) {
   const [previewVideoId, setPreviewVideoId] = useState<string | null>(null);
   const [channelModalOpen, setChannelModalOpen] = useState(false);
   const [channelUrl, setChannelUrl] = useState('');
+
+  useEffect(() => {
+    const id = setInterval(() => {
+      setPlaceholderIndex((prev) => (prev + 1) % PLACEHOLDERS.length);
+    }, 3000);
+    return () => clearInterval(id);
+  }, []);
 
   const handleURLSubmit = useCallback(async () => {
     if (!url.trim()) return;
@@ -204,7 +220,7 @@ export function URLInput({ onAdd }: URLInputProps) {
               value={url}
               onChange={(e) => setUrl(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="Paste YouTube, Spotify, or music video URL..."
+              placeholder={PLACEHOLDERS[placeholderIndex]}
               className="w-full pr-12"
               disabled={loading}
             />
