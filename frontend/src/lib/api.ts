@@ -130,6 +130,7 @@ export interface HistoryEntry {
   videoUrl: string;
   title: string;
   artist: string;
+  album?: string;
   audioSource: string;
   quality: string;
   outputPath: string;
@@ -139,6 +140,7 @@ export interface HistoryEntry {
   completedAt: string;
   status: string;
   error?: string;
+  explicit?: boolean;
 }
 
 export interface HistoryStats {

@@ -47,6 +47,9 @@ interface QueueItemProps {
   onRemove: (id: string) => void;
   onRetry?: (id: string) => void;
   onOpenFolder?: (path: string) => void;
+  onArtistClick?: (artist: string) => void;
+  onAlbumClick?: (album: string) => void;
+  onViewLogs?: (id: string) => void;
 }
 
 const SkipIcon = () => (
@@ -56,10 +59,20 @@ const SkipIcon = () => (
   </svg>
 );
 
+const FileTextIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+    <polyline points="14 2 14 8 20 8" />
+    <line x1="16" y1="13" x2="8" y2="13" />
+    <line x1="16" y1="17" x2="8" y2="17" />
+    <line x1="10" y1="9" x2="8" y2="9" />
+  </svg>
+);
+
 function getStatusBadge(status: QueueStatus, stage?: string): { label: string; className: string } {
-  // Detect skipped items
-  if (status === 'complete' && stage?.includes('Skipped')) {
-    return { label: 'Skipped', className: 'badge-neutral' };
+  // Detect skipped items (real status or legacy stage-based)
+  if (status === 'skipped' || (status === 'complete' && stage?.includes('Skipped'))) {
+    return { label: 'Skipped (existing file)', className: 'badge-neutral' };
   }
   switch (status) {
     case 'pending':
@@ -93,11 +106,20 @@ function formatDuration(seconds: number): string {
   return `${mins}:${secs.toString().padStart(2, '0')}`;
 }
 
-export function QueueItem({ item, onCancel, onRemove, onRetry, onOpenFolder }: QueueItemProps) {
+export function QueueItem({
+  item,
+  onCancel,
+  onRemove,
+  onRetry,
+  onOpenFolder,
+  onArtistClick,
+  onAlbumClick,
+  onViewLogs,
+}: QueueItemProps) {
   const status = item.status as QueueStatus;
-  const isProcessing = !['complete', 'error', 'cancelled', 'pending'].includes(status);
+  const isProcessing = !['complete', 'error', 'cancelled', 'pending', 'skipped'].includes(status);
   const badge = getStatusBadge(status, item.stage);
-  const isSkipped = status === 'complete' && item.stage?.includes('Skipped');
+  const isSkipped = status === 'skipped' || (status === 'complete' && item.stage?.includes('Skipped'));
   const [showDiagnostics, setShowDiagnostics] = useState(false);
   const hasDiagnostics = item.matchDiagnostics || (item.matchCandidates && item.matchCandidates.length > 0);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -165,7 +187,35 @@ export function QueueItem({ item, onCancel, onRemove, onRetry, onOpenFolder }: Q
                 style={{ color: 'var(--color-text-secondary)' }}
                 title={item.artist}
               >
-                {item.artist || 'Unknown Artist'}
+                {onArtistClick && item.artist ? (
+                  <button
+                    type="button"
+                    onClick={() => onArtistClick(item.artist)}
+                    className="hover:underline cursor-pointer bg-transparent border-none p-0"
+                    style={{ color: 'inherit', font: 'inherit' }}
+                  >
+                    {item.artist}
+                  </button>
+                ) : (
+                  item.artist || 'Unknown Artist'
+                )}
+                {item.album && (
+                  <>
+                    {' — '}
+                    {onAlbumClick ? (
+                      <button
+                        type="button"
+                        onClick={() => onAlbumClick(item.album!)}
+                        className="hover:underline cursor-pointer bg-transparent border-none p-0"
+                        style={{ color: 'inherit', font: 'inherit' }}
+                      >
+                        {item.album}
+                      </button>
+                    ) : (
+                      <span>{item.album}</span>
+                    )}
+                  </>
+                )}
               </p>
             </div>
             <div className="flex items-center gap-2 flex-shrink-0">
@@ -253,6 +303,17 @@ export function QueueItem({ item, onCancel, onRemove, onRetry, onOpenFolder }: Q
             </div>
 
             <div className="flex items-center gap-1">
+              {/* View logs */}
+              {onViewLogs && (
+                <button
+                  className="btn-icon"
+                  onClick={() => onViewLogs(item.id)}
+                  title="View logs"
+                >
+                  <FileTextIcon />
+                </button>
+              )}
+
               {/* Retry button for errors */}
               {status === 'error' && onRetry && (
                 <button
