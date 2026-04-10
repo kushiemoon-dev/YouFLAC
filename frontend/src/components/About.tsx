@@ -14,12 +14,80 @@ const HeartIcon = () => (
   </svg>
 );
 
+const ChevronIcon = ({ open }: { open: boolean }) => (
+  <svg
+    width="16"
+    height="16"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    style={{ transition: 'transform 0.2s', transform: open ? 'rotate(180deg)' : 'rotate(0deg)' }}
+  >
+    <polyline points="6 9 12 15 18 9" />
+  </svg>
+);
+
+const CopyIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+  </svg>
+);
+
+const BTC_ADDRESS = 'bc1qyouflac000000000000000000000000000000';
+const BTC_SHORT = 'bc1qyouflac…0000';
+
+const FAQ_ITEMS = [
+  {
+    id: 'what',
+    question: 'What is YouFLAC?',
+    answer: 'YouFLAC downloads YouTube videos and replaces the audio with lossless FLAC from Tidal, Qobuz or Amazon Music, producing a high-quality MKV file.',
+  },
+  {
+    id: 'subscription',
+    question: 'Do I need a Tidal or Qobuz subscription?',
+    answer: 'Yes. YouFLAC uses your existing credentials to fetch lossless audio. Set up your API keys in Settings.',
+  },
+  {
+    id: 'files',
+    question: 'Where are my files saved?',
+    answer: 'By default in ~/MusicVideos. You can change the output directory in Settings → General.',
+  },
+  {
+    id: 'legal',
+    question: 'Is YouFLAC legal?',
+    answer: 'YouFLAC is for personal use only. Always respect copyright law and the terms of service of any platform you use.',
+  },
+];
+
 export function About() {
   const [version, setVersion] = useState('');
+  const [openFaq, setOpenFaq] = useState<string | null>(null);
+  const [githubModalOpen, setGithubModalOpen] = useState(false);
+  const [btcCopied, setBtcCopied] = useState(false);
 
   useEffect(() => {
     Api.GetAppVersion().then(setVersion).catch(console.error);
   }, []);
+
+  function toggleFaq(id: string) {
+    setOpenFaq((prev) => (prev === id ? null : id));
+  }
+
+  function handleCopyBtc() {
+    navigator.clipboard.writeText(BTC_ADDRESS).then(() => {
+      setBtcCopied(true);
+      setTimeout(() => setBtcCopied(false), 2000);
+    });
+  }
+
+  function handleOpenGithub() {
+    window.open('https://github.com/kushie/youflac', '_blank');
+    setGithubModalOpen(false);
+  }
 
   return (
     <div className="min-h-screen">
@@ -93,17 +161,10 @@ export function About() {
           <div className="flex justify-center gap-4">
             <button
               className="btn-secondary flex items-center gap-2"
-              onClick={() => window.open('https://github.com/kushie/youflac', '_blank')}
+              onClick={() => setGithubModalOpen(true)}
             >
               <GithubIcon />
               GitHub
-            </button>
-            <button
-              className="btn-primary flex items-center gap-2"
-              onClick={() => window.open('https://ko-fi.com/username', '_blank')}
-            >
-              <HeartIcon />
-              Support
             </button>
           </div>
         </div>
@@ -135,7 +196,138 @@ export function About() {
             </div>
           </div>
         </div>
+
+        {/* FAQ */}
+        <div className="card p-6 mt-6 animate-slide-up" style={{ animationDelay: '0.2s' }}>
+          <h3
+            className="font-medium mb-4"
+            style={{ color: 'var(--color-text-primary)' }}
+          >
+            FAQ
+          </h3>
+          <div className="space-y-2">
+            {FAQ_ITEMS.map((item) => (
+              <div key={item.id} style={{ borderBottom: '1px solid var(--color-border)' }}>
+                <button
+                  className="w-full flex items-center justify-between py-3 text-left"
+                  onClick={() => toggleFaq(item.id)}
+                  style={{ color: 'var(--color-text-primary)', background: 'none', border: 'none', cursor: 'pointer' }}
+                >
+                  <span className="font-medium text-sm">{item.question}</span>
+                  <ChevronIcon open={openFaq === item.id} />
+                </button>
+                {openFaq === item.id && (
+                  <p
+                    className="pb-3 text-sm"
+                    style={{ color: 'var(--color-text-secondary)' }}
+                  >
+                    {item.answer}
+                  </p>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Support / Donations */}
+        <div className="card p-6 mt-6 animate-slide-up" style={{ animationDelay: '0.3s' }}>
+          <h3
+            className="font-medium mb-2"
+            style={{ color: 'var(--color-text-primary)' }}
+          >
+            Support YouFLAC
+          </h3>
+          <p
+            className="text-sm mb-4"
+            style={{ color: 'var(--color-text-secondary)' }}
+          >
+            If this tool saves you time, consider supporting development.
+          </p>
+          <div className="flex flex-wrap items-center gap-3">
+            <button
+              className="btn-primary flex items-center gap-2"
+              onClick={() => window.open('https://ko-fi.com/username', '_blank')}
+            >
+              <HeartIcon />
+              Ko-fi
+            </button>
+            <div
+              className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-mono"
+              style={{ background: 'var(--color-bg-tertiary)', color: 'var(--color-text-secondary)' }}
+            >
+              <span>BTC: {BTC_SHORT}</span>
+              <button
+                className="btn-icon"
+                onClick={handleCopyBtc}
+                title="Copy BTC address"
+                style={{ color: 'var(--color-text-tertiary)' }}
+              >
+                {btcCopied ? (
+                  <span className="text-xs" style={{ color: 'var(--color-success)' }}>Copied!</span>
+                ) : (
+                  <CopyIcon />
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
+
+      {/* GitHub Warning Modal */}
+      {githubModalOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center"
+          style={{ background: 'var(--color-overlay-heavy)' }}
+          onClick={() => setGithubModalOpen(false)}
+        >
+          <div
+            className="card p-6 max-w-sm w-full mx-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3
+              className="font-semibold text-lg mb-3"
+              style={{ color: 'var(--color-text-primary)' }}
+            >
+              Before opening an issue
+            </h3>
+            <p
+              className="text-sm mb-2"
+              style={{ color: 'var(--color-text-secondary)' }}
+            >
+              Please make sure you have:
+            </p>
+            <ul
+              className="text-sm mb-4 space-y-1"
+              style={{ color: 'var(--color-text-secondary)' }}
+            >
+              <li>• Checked the existing issues</li>
+              <li>• Enabled Debug log level in Settings</li>
+              <li>• Included your YouFLAC version and OS</li>
+            </ul>
+            <p
+              className="text-sm mb-6"
+              style={{ color: 'var(--color-text-tertiary)' }}
+            >
+              Opening duplicate issues without this info may be closed without response.
+            </p>
+            <div className="flex justify-end gap-3">
+              <button
+                className="btn-secondary"
+                onClick={() => setGithubModalOpen(false)}
+              >
+                Cancel
+              </button>
+              <button
+                className="btn-primary flex items-center gap-2"
+                onClick={handleOpenGithub}
+              >
+                <GithubIcon />
+                Open GitHub
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
