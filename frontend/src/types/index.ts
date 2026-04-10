@@ -13,6 +13,7 @@ export type QueueStatus =
   | 'muxing'
   | 'organizing'
   | 'complete'
+  | 'skipped'
   | 'error'
   | 'cancelled'
   | 'paused';
