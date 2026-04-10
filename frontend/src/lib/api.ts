@@ -32,6 +32,7 @@ export interface Config {
   qobuzAppId: string;
   qobuzAppSecret: string;
   qobuzUserToken: string;
+  uiFont: string;
 }
 
 export interface LogEntry {

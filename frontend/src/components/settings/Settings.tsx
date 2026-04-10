@@ -7,6 +7,7 @@ import { useSettings } from '../../hooks/useSettings';
 import { applyAccentColor } from '../../hooks/useAccentColor';
 import { applyTheme } from '../../hooks/useTheme';
 import { setSoundEnabled } from '../../hooks/useSoundEffects';
+import { applyFont } from '../../hooks/useFont';
 import { AccentColor, Page } from '../../types';
 import * as Api from '../../lib/api';
 
@@ -65,6 +66,12 @@ const themeOptions = [
   { value: 'system', label: 'System', description: 'Follow system preference' },
   { value: 'dark', label: 'Dark', description: 'Always use dark mode' },
   { value: 'light', label: 'Light', description: 'Always use light mode' },
+];
+
+const fontOptions = [
+  { value: 'outfit', label: 'Outfit', description: 'Default — geometric sans-serif' },
+  { value: 'inter', label: 'Inter', description: 'Clean, versatile sans-serif' },
+  { value: 'bricolage', label: 'Bricolage Grotesque', description: 'Playful, expressive display font' },
 ];
 
 const cookiesBrowserOptions = [
@@ -406,6 +413,15 @@ export function Settings({ pendingNavigate = null, onResolvePending, onRegisterG
                       applyAccentColor(color);
                     }}
                   />
+                </SettingRow>
+                <SettingRow label="UI Font" description="Application font family">
+                  <div style={{ minWidth: 200 }}>
+                    <Dropdown
+                      value={config.uiFont || 'outfit'}
+                      options={fontOptions}
+                      onChange={(v) => { handleChange('uiFont', v); applyFont(v); }}
+                    />
+                  </div>
                 </SettingRow>
               </div>
             </section>
