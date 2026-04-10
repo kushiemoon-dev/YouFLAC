@@ -131,6 +131,7 @@ func (s *Server) setupRoutes() {
 	// Converter routes
 	api.Post("/convert", s.handleConvert)
 	api.Get("/convert/formats", s.handleGetConvertFormats)
+	api.Post("/converter/directory", s.handleConvertDirectory)
 
 	// Analyzer routes
 	api.Post("/analyze", s.handleAnalyzeAudio)

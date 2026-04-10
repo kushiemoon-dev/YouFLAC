@@ -37,6 +37,32 @@ func sandboxPath(root, p string) (string, error) {
 	return abs, nil
 }
 
+func (s *Server) handleConvertDirectory(c *fiber.Ctx) error {
+	var opts core.ConvertDirOptions
+	if err := c.BodyParser(&opts); err != nil {
+		return c.Status(400).JSON(fiber.Map{"error": "invalid request body"})
+	}
+	if opts.Dir == "" {
+		return c.Status(400).JSON(fiber.Map{"error": "dir is required"})
+	}
+
+	root := s.config.OutputDirectory
+	if root == "" {
+		root = core.GetDefaultOutputDirectory()
+	}
+	if _, err := sandboxPath(root, opts.Dir); err != nil {
+		return c.Status(400).JSON(fiber.Map{"error": "dir: " + err.Error()})
+	}
+
+	if err := core.ConvertDirectory(c.Context(), opts, func(r core.DirConvertResult) {
+		s.wsHub.Broadcast(fiber.Map{"type": "convert_progress", "data": r})
+	}); err != nil {
+		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	return c.JSON(fiber.Map{"success": true, "message": "conversion complete"})
+}
+
 func (s *Server) handleResample(c *fiber.Ctx) error {
 	var opts core.ResampleOptions
 	if err := c.BodyParser(&opts); err != nil {
