@@ -852,3 +852,24 @@ func (s *Server) handleFFmpegInstall(c *fiber.Ctx) error {
 	}()
 	return c.JSON(fiber.Map{"started": true})
 }
+
+func (s *Server) handleChannelAssets(c *fiber.Ctx) error {
+	var body struct {
+		URL string `json:"url"`
+	}
+	if err := c.BodyParser(&body); err != nil || body.URL == "" {
+		return c.Status(400).JSON(fiber.Map{"error": "url required"})
+	}
+	assets, err := core.GetChannelAssets(body.URL)
+	if err != nil {
+		return c.Status(502).JSON(fiber.Map{"error": err.Error()})
+	}
+	dir, err := core.DownloadChannelAssets(assets, s.config.OutputDirectory)
+	if err != nil {
+		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
+	}
+	return c.JSON(fiber.Map{
+		"assets": assets,
+		"dir":    dir,
+	})
+}
