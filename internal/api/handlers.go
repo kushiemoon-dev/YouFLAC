@@ -3,7 +3,10 @@ package api
 import (
 	"context"
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
+	"io"
+	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
@@ -977,4 +980,54 @@ func (s *Server) handleOpenConfigFolder(c *fiber.Ctx) error {
 		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
 	}
 	return c.JSON(fiber.Map{"success": true})
+}
+
+// handleUpdateCheck calls the GitHub releases API and compares the latest tag to AppVersion.
+// On any error it degrades gracefully (no 5xx).
+func (s *Server) handleUpdateCheck(c *fiber.Ctx) error {
+	graceful := fiber.Map{
+		"currentVersion": AppVersion,
+		"latestVersion":  "",
+		"hasUpdate":      false,
+		"releaseUrl":     "",
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet,
+		"https://api.github.com/repos/kushiemoon-dev/YouFLAC/releases/latest", nil)
+	if err != nil {
+		return c.JSON(graceful)
+	}
+	req.Header.Set("User-Agent", "YouFLAC/"+AppVersion+" update-checker")
+	req.Header.Set("Accept", "application/vnd.github+json")
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return c.JSON(graceful)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return c.JSON(graceful)
+	}
+
+	var payload struct {
+		TagName string `json:"tag_name"`
+		HTMLURL string `json:"html_url"`
+	}
+	if err := json.NewDecoder(io.LimitReader(resp.Body, 64*1024)).Decode(&payload); err != nil {
+		return c.JSON(graceful)
+	}
+
+	latest := strings.TrimPrefix(payload.TagName, "v")
+	hasUpdate := latest != "" && latest != AppVersion
+
+	return c.JSON(fiber.Map{
+		"currentVersion": AppVersion,
+		"latestVersion":  latest,
+		"hasUpdate":      hasUpdate,
+		"releaseUrl":     payload.HTMLURL,
+	})
 }
