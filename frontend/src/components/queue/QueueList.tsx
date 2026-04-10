@@ -2,6 +2,7 @@ import { useState } from 'react';
 import type { QueueItem as QueueItemType, QueueStats } from '../../lib/api';
 import { QueueItem } from './QueueItem';
 import { ConfirmDialog } from '../ui/ConfirmDialog';
+import { DebugLogsModal } from './DebugLogsModal';
 import {
   useQueueFilter,
   type QueueFilter,
@@ -124,6 +125,12 @@ export function QueueList({
   });
   const [sort, setSort] = useState<QueueSort>({ by: 'default', dir: 'desc' });
   const [confirmAction, setConfirmAction] = useState<'clearAll' | 'clearCompleted' | null>(null);
+  const [logsItemId, setLogsItemId] = useState<string | null>(null);
+
+  const handleViewLogs = (id: string) => {
+    setLogsItemId(id);
+    onViewLogs?.(id);
+  };
 
   const filteredAndSorted = useQueueFilter(items, filter, sort);
 
@@ -302,7 +309,7 @@ export function QueueList({
                   onRemove={onRemove}
                   onArtistClick={onArtistClick}
                   onAlbumClick={onAlbumClick}
-                  onViewLogs={onViewLogs}
+                  onViewLogs={handleViewLogs}
                 />
               </div>
             ))}
@@ -376,6 +383,13 @@ export function QueueList({
           confirmLabel="Clear"
           onConfirm={() => { onClearCompleted(); setConfirmAction(null); }}
           onCancel={() => setConfirmAction(null)}
+        />
+      )}
+
+      {logsItemId && (
+        <DebugLogsModal
+          itemId={logsItemId}
+          onClose={() => setLogsItemId(null)}
         />
       )}
     </div>
