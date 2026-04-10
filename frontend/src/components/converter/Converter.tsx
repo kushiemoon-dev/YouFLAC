@@ -120,6 +120,14 @@ export function Converter() {
       wsRef.current = null;
     };
 
+    // Guard against server-side disconnects that never send done:true.
+    ws.onclose = () => {
+      if (!dirDone) {
+        setDirConverting(false);
+      }
+      wsRef.current = null;
+    };
+
     try {
       const opts: Api.ConvertDirOptions = {
         dir: dirPath.trim(),
