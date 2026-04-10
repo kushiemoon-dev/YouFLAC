@@ -15,6 +15,7 @@ import { applyAccentColor } from './hooks/useAccentColor';
 import { applyTheme } from './hooks/useTheme';
 import { setSoundEnabled } from './hooks/useSoundEffects';
 import { applyFont } from './hooks/useFont';
+import { useUpdateCheck } from './hooks/useUpdateCheck';
 import type { Page, AccentColor } from './types';
 import * as Api from './lib/api';
 
@@ -22,6 +23,7 @@ function App() {
   const [activePage, setActivePage] = useState<Page>('home');
   const [pendingPage, setPendingPage] = useState<Page | null>(null);
   const settingsGuardRef = useRef<(() => boolean) | null>(null);
+  const { hasUpdate, latestVersion, releaseUrl, dismiss } = useUpdateCheck();
 
   const handleNavigate = (page: Page) => {
     if (activePage === 'settings' && settingsGuardRef.current?.()) {
@@ -94,6 +96,19 @@ function App() {
   return (
     <Layout activePage={activePage} onNavigate={handleNavigate}>
       {renderPage()}
+      {hasUpdate && (
+        <div style={{
+          position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 100,
+          padding: '8px 16px', background: 'var(--color-accent)',
+          display: 'flex', alignItems: 'center', gap: '8px',
+          color: '#000', fontSize: '14px'
+        }}>
+          <span>YouFLAC {latestVersion} available.</span>
+          <a href={releaseUrl} target="_blank" rel="noopener noreferrer"
+             style={{ color: '#000', fontWeight: 600 }}>Download</a>
+          <button onClick={dismiss} style={{ marginLeft: 'auto', background: 'none', border: 'none', cursor: 'pointer', fontSize: '16px' }}>×</button>
+        </div>
+      )}
     </Layout>
   );
 }
