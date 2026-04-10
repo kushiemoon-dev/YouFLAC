@@ -59,6 +59,7 @@ export interface RetryOverrideRequest {
   artist?: string;
   title?: string;
   musicUrl?: string;
+  forceSource?: string;
 }
 
 export interface QueueItem {
@@ -92,6 +93,7 @@ export interface QueueItem {
   audioOnly?: boolean;
   matchCandidates?: AudioCandidate[];
   matchDiagnostics?: MatchDiagnostics;
+  forceSource?: string;
 }
 
 export interface QueueStats {
@@ -315,6 +317,12 @@ export async function retryWithOverride(id: string, req: RetryOverrideRequest): 
     method: 'POST',
     body: JSON.stringify(req),
   });
+}
+
+export async function RetryQueueItemWithSource(id: string, forceSource: string): Promise<void> {
+  const body: Record<string, string> = {};
+  if (forceSource && forceSource !== 'auto') body.forceSource = forceSource;
+  await api(`/queue/${id}/retry-override`, { method: 'POST', body: JSON.stringify(body) });
 }
 
 export async function ClearQueue(): Promise<void> {
