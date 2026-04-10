@@ -9,6 +9,7 @@ import { FileManager } from './components/files/FileManager';
 import { Terminal } from './components/Terminal';
 import { About } from './components/About';
 import { Converter } from './components/converter/Converter';
+import { Resampler } from './components/resampler';
 import { applyAccentColor } from './hooks/useAccentColor';
 import { applyTheme } from './hooks/useTheme';
 import { setSoundEnabled } from './hooks/useSoundEffects';
@@ -52,6 +53,8 @@ function App() {
         return <Terminal />;
       case 'about':
         return <About />;
+      case 'resampler':
+        return <Resampler />;
       default:
         return <Home />;
     }

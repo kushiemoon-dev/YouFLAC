@@ -4,7 +4,7 @@ import { ChannelDownloadModal } from './ChannelDownloadModal'
 
 // Mock fetch
 const mockFetch = vi.fn()
-global.fetch = mockFetch
+globalThis.fetch = mockFetch
 
 beforeEach(() => {
   mockFetch.mockReset()
