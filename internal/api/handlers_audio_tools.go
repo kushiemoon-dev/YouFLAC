@@ -34,7 +34,8 @@ func sandboxPath(root, p string) (string, error) {
 	if !strings.HasPrefix(resolved, rootAbs+string(os.PathSeparator)) && resolved != rootAbs {
 		return "", fmt.Errorf("path outside allowed directory")
 	}
-	return abs, nil
+	// Return the resolved (canonicalized) path when it exists; abs for not-yet-created outputs.
+	return resolved, nil
 }
 
 func (s *Server) handleConvertDirectory(c *fiber.Ctx) error {
