@@ -55,6 +55,42 @@ func TestHandleResample_MissingBody(t *testing.T) {
 	}
 }
 
+func TestHandleVideoPreview_MissingURL(t *testing.T) {
+	s := newTestServer(t)
+	req := httptest.NewRequest(http.MethodGet, "/api/video/preview", nil)
+	resp, err := s.app.Test(req, 5000)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if resp.StatusCode != http.StatusBadRequest {
+		t.Errorf("expected 400 for missing url, got %d", resp.StatusCode)
+	}
+}
+
+func TestHandleVideoPreview_SecondsTooHigh(t *testing.T) {
+	s := newTestServer(t)
+	req := httptest.NewRequest(http.MethodGet, "/api/video/preview?url=https%3A%2F%2Fwww.youtube.com%2Fwatch%3Fv%3DdQw4w9WgXcQ&seconds=999", nil)
+	resp, err := s.app.Test(req, 5000)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if resp.StatusCode != http.StatusUnprocessableEntity {
+		t.Errorf("expected 422 for seconds > 60, got %d", resp.StatusCode)
+	}
+}
+
+func TestHandleVideoPreview_InvalidYouTubeURL(t *testing.T) {
+	s := newTestServer(t)
+	req := httptest.NewRequest(http.MethodGet, "/api/video/preview?url=https%3A%2F%2Fexample.com%2Fnotyt", nil)
+	resp, err := s.app.Test(req, 5000)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if resp.StatusCode != http.StatusBadRequest {
+		t.Errorf("expected 400 for non-YouTube URL, got %d", resp.StatusCode)
+	}
+}
+
 func TestHandleResample_InvalidSampleRate(t *testing.T) {
 	tmp := t.TempDir()
 

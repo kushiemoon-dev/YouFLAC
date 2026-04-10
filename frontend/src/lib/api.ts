@@ -651,3 +651,11 @@ export function BrowserOpenURL(url: string): void {
 export async function OpenConfigFolder(): Promise<void> {
   await api<void>('/system/open-config-folder', { method: 'POST' });
 }
+
+// ============== Preview API ==============
+
+// Returns the URL for streaming a short audio preview (OGG/Vorbis).
+// Use directly as <audio src> — no fetch needed.
+export function GetPreviewURL(videoURL: string, seconds = 30): string {
+  return `/api/video/preview?url=${encodeURIComponent(videoURL)}&seconds=${seconds}`;
+}
