@@ -81,6 +81,18 @@ func (s *Server) handleGetQueueItem(c *fiber.Ctx) error {
 	return c.JSON(item)
 }
 
+func (s *Server) handleGetItemLogs(c *fiber.Ctx) error {
+	id := c.Params("id")
+	if id == "" {
+		return c.Status(400).JSON(fiber.Map{"error": "id required"})
+	}
+	entries := core.GetItemLogs(id)
+	if entries == nil {
+		entries = []core.LogEntry{}
+	}
+	return c.JSON(entries)
+}
+
 func (s *Server) handleRemoveFromQueue(c *fiber.Ctx) error {
 	id := c.Params("id")
 	if err := s.queue.RemoveFromQueue(id); err != nil {
