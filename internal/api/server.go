@@ -142,6 +142,10 @@ func (s *Server) setupRoutes() {
 	// Service status
 	api.Get("/services/status", s.handleServicesStatus)
 
+	// System / ffmpeg
+	api.Get("/system/ffmpeg/status", s.handleFFmpegStatus)
+	api.Post("/system/ffmpeg/install", s.handleFFmpegInstall)
+
 	// Version
 	api.Get("/version", s.handleGetVersion)
 
