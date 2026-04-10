@@ -39,6 +39,7 @@ export interface LogEntry {
   time: string;
   level: string;
   message: string;
+  fields?: string;
 }
 
 export interface DownloadRequest {
@@ -339,6 +340,10 @@ export async function ResumeQueueItem(id: string): Promise<void> {
 
 export async function FetchLogs(sinceId: number): Promise<LogEntry[]> {
   return api<LogEntry[]>(`/logs?since=${sinceId}`);
+}
+
+export async function GetItemLogs(id: string): Promise<LogEntry[]> {
+  return api<LogEntry[]>(`/queue/${encodeURIComponent(id)}/logs`);
 }
 
 export async function SaveQueue(): Promise<void> {
