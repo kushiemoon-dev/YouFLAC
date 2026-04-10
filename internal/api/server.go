@@ -90,6 +90,7 @@ func (s *Server) setupRoutes() {
 
 	// Playlist routes
 	api.Post("/playlist", s.handleAddPlaylistToQueue)
+	api.Post("/playlist/lyrics/bulk", s.handlePlaylistLyricsBulk)
 
 	// Config routes
 	api.Get("/config", s.handleGetConfig)

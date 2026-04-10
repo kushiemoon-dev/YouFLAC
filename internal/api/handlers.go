@@ -853,6 +853,35 @@ func (s *Server) handleFFmpegInstall(c *fiber.Ctx) error {
 	return c.JSON(fiber.Map{"started": true})
 }
 
+func (s *Server) handlePlaylistLyricsBulk(c *fiber.Ctx) error {
+	var body struct {
+		Dir string `json:"dir"`
+	}
+	if err := c.BodyParser(&body); err != nil || body.Dir == "" {
+		return c.Status(400).JSON(fiber.Map{"error": "dir required"})
+	}
+	results, err := core.BulkFetchLyrics(body.Dir)
+	if err != nil {
+		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
+	}
+	summary := map[string]string{}
+	success, failed := 0, 0
+	for path, ferr := range results {
+		if ferr == nil {
+			success++
+			summary[path] = "ok"
+		} else {
+			failed++
+			summary[path] = ferr.Error()
+		}
+	}
+	return c.JSON(fiber.Map{
+		"success": success,
+		"failed":  failed,
+		"files":   summary,
+	})
+}
+
 func (s *Server) handleChannelAssets(c *fiber.Ctx) error {
 	var body struct {
 		URL string `json:"url"`
