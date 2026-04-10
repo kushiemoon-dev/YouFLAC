@@ -10,6 +10,7 @@ import { Terminal } from './components/Terminal';
 import { About } from './components/About';
 import { Converter } from './components/converter/Converter';
 import { Resampler } from './components/resampler';
+import { AnalyzerBatch } from './components/analyzer';
 import { applyAccentColor } from './hooks/useAccentColor';
 import { applyTheme } from './hooks/useTheme';
 import { setSoundEnabled } from './hooks/useSoundEffects';
@@ -55,6 +56,8 @@ function App() {
         return <About />;
       case 'resampler':
         return <Resampler />;
+      case 'analyzer-batch':
+        return <AnalyzerBatch />;
       default:
         return <Home />;
     }
