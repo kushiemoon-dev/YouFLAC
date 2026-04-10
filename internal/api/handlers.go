@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"encoding/base64"
 	"fmt"
 	"os"
@@ -831,4 +832,23 @@ func (s *Server) handleSearch(c *fiber.Ctx) error {
 	}
 
 	return c.JSON(results)
+}
+
+// FFmpeg status
+func (s *Server) handleFFmpegStatus(c *fiber.Ctx) error {
+	return c.JSON(core.DetectFFmpeg())
+}
+
+// FFmpeg install (async, progress broadcast via WebSocket)
+func (s *Server) handleFFmpegInstall(c *fiber.Ctx) error {
+	go func() {
+		ctx := context.Background()
+		err := core.InstallFFmpeg(ctx, func(p core.FFmpegProgress) {
+			s.wsHub.Broadcast(fiber.Map{"type": "ffmpeg_install", "progress": p})
+		})
+		if err != nil {
+			s.wsHub.Broadcast(fiber.Map{"type": "ffmpeg_install", "progress": core.FFmpegProgress{Stage: "error", Error: err.Error()}})
+		}
+	}()
+	return c.JSON(fiber.Map{"started": true})
 }
