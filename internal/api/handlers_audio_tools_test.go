@@ -29,6 +29,19 @@ func makeTempWAV(t *testing.T) string {
 	return out
 }
 
+func TestHandleConvertDirectory_MissingDir(t *testing.T) {
+	s := newTestServer(t)
+	req := httptest.NewRequest(http.MethodPost, "/api/converter/directory", bytes.NewReader([]byte("{}")))
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := s.app.Test(req, 5000)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if resp.StatusCode != http.StatusBadRequest {
+		t.Errorf("expected 400, got %d", resp.StatusCode)
+	}
+}
+
 func TestHandleResample_MissingBody(t *testing.T) {
 	s := newTestServer(t)
 	req := httptest.NewRequest(http.MethodPost, "/api/resampler", bytes.NewReader([]byte("{}")))
