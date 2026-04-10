@@ -7,8 +7,14 @@ import { useSettings } from '../../hooks/useSettings';
 import { applyAccentColor } from '../../hooks/useAccentColor';
 import { applyTheme } from '../../hooks/useTheme';
 import { setSoundEnabled } from '../../hooks/useSoundEffects';
-import { AccentColor } from '../../types';
+import { AccentColor, Page } from '../../types';
 import * as Api from '../../lib/api';
+
+interface SettingsProps {
+  pendingNavigate?: Page | null;
+  onResolvePending?: (confirmed: boolean) => void;
+  onRegisterGuard?: (fn: () => boolean) => void;
+}
 
 const FolderIcon = () => (
   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -122,7 +128,7 @@ function SettingRow({ label, description, children }: { label: string; descripti
   );
 }
 
-export function Settings() {
+export function Settings({ pendingNavigate = null, onResolvePending, onRegisterGuard }: SettingsProps = {}) {
   const { config, loading, saving, saveConfig, updateField } = useSettings();
   const [defaultPath, setDefaultPath] = useState('');
   const [hasChanges, setHasChanges] = useState(false);
@@ -132,9 +138,37 @@ export function Settings() {
     Api.GetDefaultOutputDirectory().then(setDefaultPath).catch(() => {});
   }, []);
 
+  useEffect(() => {
+    if (onRegisterGuard) {
+      onRegisterGuard(() => hasChanges);
+    }
+  }, [hasChanges, onRegisterGuard]);
+
   if (loading || !config) {
     return (
       <div className="min-h-screen flex items-center justify-center">
+        {pendingNavigate !== null && (
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center"
+            style={{ background: 'rgba(0,0,0,0.5)' }}
+          >
+            <div
+              className="rounded-xl p-6 shadow-2xl max-w-sm w-full mx-4"
+              style={{ background: 'var(--color-bg-secondary)', border: '1px solid var(--color-border-subtle)' }}
+            >
+              <h2 className="text-base font-semibold mb-2" style={{ color: 'var(--color-text-primary)' }}>
+                Unsaved changes
+              </h2>
+              <p className="text-sm mb-6" style={{ color: 'var(--color-text-secondary)' }}>
+                You have unsaved changes. Leave anyway?
+              </p>
+              <div className="flex gap-3 justify-end">
+                <button className="btn-ghost" onClick={() => onResolvePending?.(false)}>Stay</button>
+                <button className="btn-primary" onClick={() => onResolvePending?.(true)}>Leave</button>
+              </div>
+            </div>
+          </div>
+        )}
         <div className="text-center">
           <div className="animate-spin w-8 h-8 border-2 border-current border-t-transparent rounded-full mx-auto mb-4" style={{ color: 'var(--color-accent)' }} />
           <p style={{ color: 'var(--color-text-secondary)' }}>Loading settings...</p>
@@ -444,6 +478,21 @@ export function Settings() {
             </section>
 
             <section className="mb-8">
+              <SectionTitle title="Config" />
+              <div className="space-y-1">
+                <SettingRow label="Config Folder" description="Open the folder containing config.json">
+                  <button
+                    className="btn-secondary flex items-center gap-1.5"
+                    onClick={() => Api.OpenConfigFolder().catch(console.error)}
+                  >
+                    <FolderIcon />
+                    Open Config Folder
+                  </button>
+                </SettingRow>
+              </div>
+            </section>
+
+            <section className="mb-8">
               <SectionTitle title="Qobuz Authentication" />
               <div className="space-y-1">
                 <SettingRow label="App ID" description="Qobuz application ID">
@@ -479,6 +528,40 @@ export function Settings() {
         )}
 
       </div>
+
+      {/* Unsaved changes confirmation dialog */}
+      {pendingNavigate !== null && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center"
+          style={{ background: 'rgba(0,0,0,0.5)' }}
+        >
+          <div
+            className="rounded-xl p-6 shadow-2xl max-w-sm w-full mx-4"
+            style={{ background: 'var(--color-bg-secondary)', border: '1px solid var(--color-border-subtle)' }}
+          >
+            <h2 className="text-base font-semibold mb-2" style={{ color: 'var(--color-text-primary)' }}>
+              Unsaved changes
+            </h2>
+            <p className="text-sm mb-6" style={{ color: 'var(--color-text-secondary)' }}>
+              You have unsaved changes. Leave anyway?
+            </p>
+            <div className="flex gap-3 justify-end">
+              <button
+                className="btn-ghost"
+                onClick={() => onResolvePending?.(false)}
+              >
+                Stay
+              </button>
+              <button
+                className="btn-primary"
+                onClick={() => onResolvePending?.(true)}
+              >
+                Leave
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Fixed Footer */}
       <div
