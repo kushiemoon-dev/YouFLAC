@@ -971,3 +971,10 @@ func (s *Server) handleChannelFetchStatus(c *fiber.Ctx) error {
 	}
 	return c.JSON(job)
 }
+
+func (s *Server) handleOpenConfigFolder(c *fiber.Ctx) error {
+	if err := core.OpenConfigFolder(); err != nil {
+		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
+	}
+	return c.JSON(fiber.Map{"success": true})
+}

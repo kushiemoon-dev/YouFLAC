@@ -644,3 +644,9 @@ export async function OpenFile(path: string): Promise<void> {
 export function BrowserOpenURL(url: string): void {
   window.open(url, '_blank');
 }
+
+// ============== System API ==============
+
+export async function OpenConfigFolder(): Promise<void> {
+  await api<void>('/system/open-config-folder', { method: 'POST' });
+}

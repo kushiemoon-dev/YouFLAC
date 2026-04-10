@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import './style.css';
 
 import { Layout } from './components/layout/Layout';
@@ -19,6 +19,23 @@ import * as Api from './lib/api';
 
 function App() {
   const [activePage, setActivePage] = useState<Page>('home');
+  const [pendingPage, setPendingPage] = useState<Page | null>(null);
+  const settingsGuardRef = useRef<(() => boolean) | null>(null);
+
+  const handleNavigate = (page: Page) => {
+    if (activePage === 'settings' && settingsGuardRef.current?.()) {
+      setPendingPage(page);
+    } else {
+      setActivePage(page);
+    }
+  };
+
+  const handleResolvePending = (confirmed: boolean) => {
+    if (confirmed && pendingPage !== null) {
+      setActivePage(pendingPage);
+    }
+    setPendingPage(null);
+  };
 
   // Apply saved settings on startup
   useEffect(() => {
@@ -45,7 +62,13 @@ function App() {
       case 'history':
         return <History />;
       case 'settings':
-        return <Settings />;
+        return (
+          <Settings
+            pendingNavigate={pendingPage}
+            onResolvePending={handleResolvePending}
+            onRegisterGuard={(fn) => { settingsGuardRef.current = fn; }}
+          />
+        );
       case 'files':
         return <FileManager />;
       case 'converter':
@@ -64,7 +87,7 @@ function App() {
   };
 
   return (
-    <Layout activePage={activePage} onNavigate={setActivePage}>
+    <Layout activePage={activePage} onNavigate={handleNavigate}>
       {renderPage()}
     </Layout>
   );
