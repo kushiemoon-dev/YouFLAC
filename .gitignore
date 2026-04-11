@@ -2,6 +2,11 @@
 core/
 mobile/
 
+# Promo build artifacts
+promo/**/node_modules/
+promo/**/out/
+promo/**/.cache/
+
 # Build outputs
 build/bin/
 *.exe

@@ -23,7 +23,7 @@
 **YouFLAC** combines the best of both worlds: it downloads a YouTube video and replaces the audio track with a lossless FLAC sourced from Tidal, Qobuz, or Amazon Music — producing a perfect `.mkv` file with Hi-Res audio and full 4K video.
 
 <div align="center">
-<img src="screenshot.png" alt="YouFLAC Screenshot" width="860">
+<img src="showcase.gif" alt="YouFLAC Showcase" width="860">
 </div>
 
 ---
