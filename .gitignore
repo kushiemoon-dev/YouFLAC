@@ -1,3 +1,7 @@
+# Nested repos (separate git projects)
+core/
+mobile/
+
 # Build outputs
 build/bin/
 *.exe
