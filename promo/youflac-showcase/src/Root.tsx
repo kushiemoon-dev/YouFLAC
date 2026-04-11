@@ -2,7 +2,7 @@ import React from "react";
 import { Composition } from "remotion";
 import { Showcase, SCREENS, SCREEN_DURATION, TRANSITION } from "./Showcase";
 
-const totalFrames = 50 + SCREENS.length * (SCREEN_DURATION - TRANSITION) + 60;
+const totalFrames = 70 + SCREENS.length * (SCREEN_DURATION - TRANSITION) + 60;
 
 export const Root: React.FC = () => {
   return (

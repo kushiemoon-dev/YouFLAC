@@ -18,72 +18,12 @@ export const SCREENS = [
   { file: "07-about.png", label: "About" },
 ];
 
-export const SCREEN_DURATION = 50;
-export const TRANSITION = 12;
+export const SCREEN_DURATION = 90;
+export const TRANSITION = 15;
 
 const PINK = "#e91e8c";
 const BG = "#0d0d12";
 
-// Browser window mockup
-const BrowserMockup: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  return (
-    <div
-      style={{
-        width: 960,
-        height: 600,
-        borderRadius: 10,
-        overflow: "hidden",
-        boxShadow: `0 24px 80px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.06), 0 0 60px rgba(233,30,140,0.08)`,
-        position: "relative",
-        background: "#111",
-        display: "flex",
-        flexDirection: "column",
-      }}
-    >
-      {/* Chrome bar */}
-      <div
-        style={{
-          background: "#1a1a22",
-          padding: "10px 16px",
-          display: "flex",
-          alignItems: "center",
-          gap: 10,
-          borderBottom: "1px solid rgba(255,255,255,0.06)",
-          flexShrink: 0,
-        }}
-      >
-        {/* Traffic lights */}
-        <div style={{ display: "flex", gap: 6 }}>
-          <div style={{ width: 12, height: 12, borderRadius: "50%", background: "#ff5f57" }} />
-          <div style={{ width: 12, height: 12, borderRadius: "50%", background: "#febc2e" }} />
-          <div style={{ width: 12, height: 12, borderRadius: "50%", background: "#28c840" }} />
-        </div>
-        {/* Address bar */}
-        <div
-          style={{
-            flex: 1,
-            background: "#0d0d12",
-            borderRadius: 6,
-            padding: "5px 12px",
-            fontSize: 12,
-            color: "#666",
-            fontFamily: "system-ui, sans-serif",
-            display: "flex",
-            alignItems: "center",
-            gap: 6,
-          }}
-        >
-          <span style={{ color: "#28c840", fontSize: 10 }}>●</span>
-          localhost:8080
-        </div>
-      </div>
-      {/* Content */}
-      <div style={{ flex: 1, overflow: "hidden" }}>
-        {children}
-      </div>
-    </div>
-  );
-};
 
 const ScreenSlide: React.FC<{ src: string; label: string }> = ({ src, label }) => {
   const frame = useCurrentFrame();
@@ -114,36 +54,42 @@ const ScreenSlide: React.FC<{ src: string; label: string }> = ({ src, label }) =
   return (
     <AbsoluteFill
       style={{
-        justifyContent: "center",
-        alignItems: "center",
         opacity,
         transform: `scale(${scale}) translateY(${translateY}px)`,
       }}
     >
-      <BrowserMockup>
-        <Img
-          src={staticFile(`screenshots/${src}`)}
-          style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "top" }}
-        />
-      </BrowserMockup>
+      {/* Full screen screenshot */}
+      <Img
+        src={staticFile(`screenshots/${src}`)}
+        style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "top" }}
+      />
+
+      {/* Subtle bottom gradient for label readability */}
+      <div style={{
+        position: "absolute",
+        bottom: 0, left: 0, right: 0,
+        height: 120,
+        background: "linear-gradient(transparent, rgba(0,0,0,0.7))",
+      }} />
 
       {/* Label */}
       <div
         style={{
           position: "absolute",
-          bottom: 40,
+          bottom: 32,
+          left: "50%",
+          transform: `translateX(-50%) translateY(${labelY}px)`,
           opacity: labelOpacity,
-          transform: `translateY(${labelY}px)`,
-          background: "rgba(233,30,140,0.15)",
-          border: `1px solid rgba(233,30,140,0.4)`,
+          background: "rgba(233,30,140,0.18)",
+          border: `1px solid rgba(233,30,140,0.5)`,
           borderRadius: 20,
-          padding: "8px 20px",
-          fontSize: 16,
+          padding: "8px 22px",
+          fontSize: 18,
           fontWeight: 600,
           color: "#fff",
           fontFamily: "system-ui, sans-serif",
           letterSpacing: 0.5,
-          backdropFilter: "blur(8px)",
+          whiteSpace: "nowrap",
         }}
       >
         {label}
@@ -157,15 +103,15 @@ const TitleCard: React.FC = () => {
   const { fps } = useVideoConfig();
 
   const scale = spring({ fps, frame, config: { damping: 80, stiffness: 120 } });
-  const titleOpacity = interpolate(frame, [0, 10, 38, 48], [0, 1, 1, 0], {
+  const titleOpacity = interpolate(frame, [0, 10, 58, 68], [0, 1, 1, 0], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
-  const subOpacity = interpolate(frame, [8, 18, 38, 48], [0, 1, 1, 0], {
+  const subOpacity = interpolate(frame, [8, 18, 58, 68], [0, 1, 1, 0], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
-  const tagOpacity = interpolate(frame, [16, 24, 38, 48], [0, 1, 1, 0], {
+  const tagOpacity = interpolate(frame, [16, 24, 58, 68], [0, 1, 1, 0], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
@@ -270,7 +216,7 @@ const OutroCard: React.FC = () => {
 
 export const Showcase: React.FC = () => {
   const { durationInFrames } = useVideoConfig();
-  const outroStart = 50 + SCREENS.length * (SCREEN_DURATION - TRANSITION);
+  const outroStart = 70 + SCREENS.length * (SCREEN_DURATION - TRANSITION);
 
   return (
     <AbsoluteFill style={{ background: BG }}>
@@ -282,12 +228,12 @@ export const Showcase: React.FC = () => {
         }}
       />
 
-      <Sequence durationInFrames={50}>
+      <Sequence durationInFrames={70}>
         <TitleCard />
       </Sequence>
 
       {SCREENS.map((screen, i) => {
-        const start = 50 + i * (SCREEN_DURATION - TRANSITION);
+        const start = 70 + i * (SCREEN_DURATION - TRANSITION);
         return (
           <Sequence key={screen.file} from={start} durationInFrames={SCREEN_DURATION + 10}>
             <ScreenSlide src={screen.file} label={screen.label} />
@@ -298,6 +244,7 @@ export const Showcase: React.FC = () => {
       <Sequence from={outroStart} durationInFrames={durationInFrames - outroStart}>
         <OutroCard />
       </Sequence>
+
     </AbsoluteFill>
   );
 };
