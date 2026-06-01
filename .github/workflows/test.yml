@@ -30,6 +30,9 @@ jobs:
       - name: Build server
         working-directory: youflac
         run: go build ./cmd/server
+      - name: Create frontend/dist placeholder for embed
+        working-directory: youflac
+        run: mkdir -p frontend/dist
       - name: Vet
         working-directory: youflac
         run: go vet ./...
