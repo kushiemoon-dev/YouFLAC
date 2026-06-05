@@ -11,6 +11,7 @@ import { About } from './components/About';
 import { Converter } from './components/converter/Converter';
 import { Resampler } from './components/resampler';
 import { AnalyzerBatch } from './components/analyzer';
+import { UniversalSearch } from './components/search/UniversalSearch';
 import { applyAccentColor } from './hooks/useAccentColor';
 import { applyTheme } from './hooks/useTheme';
 import { setSoundEnabled } from './hooks/useSoundEffects';
@@ -88,6 +89,8 @@ function App() {
         return <Resampler />;
       case 'analyzer-batch':
         return <AnalyzerBatch />;
+      case 'search':
+        return <UniversalSearch />;
       default:
         return <Home />;
     }
