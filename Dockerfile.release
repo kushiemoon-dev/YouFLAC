@@ -16,6 +16,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     python3-brotli \
     ca-certificates \
     curl \
+    unzip \
     && rm -rf /var/lib/apt/lists/* \
     && apt-get clean
 
@@ -32,6 +33,21 @@ WORKDIR /app
 # BuildKit sets TARGETARCH automatically (amd64, arm64).
 # The CI prepares dist/youflac-server-amd64 and dist/youflac-server-arm64.
 ARG TARGETARCH
+
+# Install sldl (Soulseek downloader) — amd64 only.
+# arm64 has no upstream binary; Soulseek degrades gracefully (IsAvailable=false).
+# v2.6.0 · SHA256: 3f02415a6b48646e4e66fc713591914571af8fddb92ec236749125dde284cb33
+RUN if [ "$TARGETARCH" = "amd64" ]; then \
+        curl -fsSL \
+            https://github.com/fiso64/slsk-batchdl/releases/download/v2.6.0/sldl_linux-x64.zip \
+            -o /tmp/sldl.zip \
+        && echo "3f02415a6b48646e4e66fc713591914571af8fddb92ec236749125dde284cb33  /tmp/sldl.zip" | sha256sum -c - \
+        && unzip /tmp/sldl.zip -d /tmp/sldl/ \
+        && find /tmp/sldl/ -name 'sldl' -type f | head -1 | xargs -I{} mv {} /usr/local/bin/sldl \
+        && chmod +x /usr/local/bin/sldl \
+        && rm -rf /tmp/sldl.zip /tmp/sldl; \
+    fi
+
 COPY dist/youflac-server-${TARGETARCH} ./youflac-server
 COPY dist/frontend/                    ./frontend/dist/
 
