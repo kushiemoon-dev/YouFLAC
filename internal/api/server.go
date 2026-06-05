@@ -22,6 +22,10 @@ type Server struct {
 	fileIndex *core.FileIndex
 	wsHub     *WebSocketHub
 	registry  *core.ChannelJobRegistry
+
+	// v4 engine (optional — nil when not initialized)
+	sourceMgr    *core.SourceManager
+	orchestrator *core.DownloadOrchestrator
 }
 
 // NewServer creates a new API server instance
@@ -61,6 +65,13 @@ func NewServer(config *core.Config, queue *core.Queue, history *core.History, fi
 	server.setupRoutes()
 
 	return server
+}
+
+// SetEngineV4 wires the v4 orchestrator components into the server.
+// Call after NewServer, before starting to listen.
+func (s *Server) SetEngineV4(sm *core.SourceManager, orch *core.DownloadOrchestrator) {
+	s.sourceMgr = sm
+	s.orchestrator = orch
 }
 
 // setupRoutes configures all API routes
@@ -155,6 +166,21 @@ func (s *Server) setupRoutes() {
 
 	// Service status
 	api.Get("/services/status", s.handleServicesStatus)
+
+	// v4 — Sources
+	api.Get("/sources", s.handleGetSources)
+	api.Put("/sources/priority", s.handleSetSourcePriority)
+
+	// v4 — Qobuz providers
+	api.Get("/qobuz/providers", s.handleGetQobuzProviders)
+	api.Put("/qobuz/providers", s.handleSetQobuzProviders)
+
+	// v4 — Soulseek
+	api.Get("/soulseek/status", s.handleGetSoulseekStatus)
+	api.Post("/soulseek/login-test", s.handleSoulseekLoginTest)
+
+	// v4 — Universal search (Deezer)
+	api.Get("/search/universal", s.handleUniversalSearch)
 
 	// System / ffmpeg
 	api.Get("/system/ffmpeg/status", s.handleFFmpegStatus)
