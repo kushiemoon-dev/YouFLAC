@@ -5,9 +5,11 @@ services:
     restart: unless-stopped
     ports:
       - "${PORT:-8080}:8080"
+      - "49997:49997"   # Soulseek (sldl) — amd64 only; leave mapped even on arm64 (harmless)
     volumes:
       - ${CONFIG_PATH:-./config}:/config
       - ${DOWNLOADS_PATH:-./downloads}:/downloads
+      # SQLite ISRC cache + download history live under CONFIG_DIR (/config/youflac.db)
     environment:
       - PORT=8080
       - OUTPUT_DIR=/downloads
