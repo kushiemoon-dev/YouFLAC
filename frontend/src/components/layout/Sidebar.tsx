@@ -103,9 +103,9 @@ export function Sidebar({ activePage, onNavigate }: SidebarProps) {
     return () => clearInterval(timer);
   }, []);
 
-  const navItems: { id: Page | 'search'; icon: React.FC; label: string; targetPage: Page; iconClass: string }[] = [
+  const navItems: { id: Page; icon: React.FC; label: string; targetPage: Page; iconClass: string }[] = [
     { id: 'home', icon: HomeIcon, label: 'Home', targetPage: 'home', iconClass: 'icon-home' },
-    { id: 'search', icon: SearchIcon, label: 'Search', targetPage: 'home', iconClass: 'icon-search' },
+    { id: 'search', icon: SearchIcon, label: 'Search', targetPage: 'search', iconClass: 'icon-search' },
     { id: 'history', icon: HistoryIcon, label: 'History', targetPage: 'history', iconClass: 'icon-history' },
     { id: 'files', icon: FolderIcon, label: 'Files', targetPage: 'files', iconClass: 'icon-files' },
     { id: 'converter', icon: ConverterIcon, label: 'Converter', targetPage: 'converter', iconClass: 'icon-converter' },
@@ -134,9 +134,7 @@ export function Sidebar({ activePage, onNavigate }: SidebarProps) {
         }}
       >
         {mobileItems.map((item) => {
-          const isActive = item.id === 'search'
-            ? false
-            : activePage === item.targetPage;
+          const isActive = activePage === item.targetPage;
           return (
             <button
               key={item.id}
@@ -186,9 +184,7 @@ export function Sidebar({ activePage, onNavigate }: SidebarProps) {
       {/* Navigation */}
       <nav className="flex flex-col gap-2 flex-1">
         {navItems.map((item, index) => {
-          const isActive = item.id === 'search'
-            ? false  // Search is a shortcut to Home, never "active"
-            : activePage === item.id;
+          const isActive = activePage === item.id;
 
           return (
             <button

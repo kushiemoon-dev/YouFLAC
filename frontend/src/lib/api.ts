@@ -33,6 +33,8 @@ export interface Config {
   qobuzAppSecret: string;
   qobuzUserToken: string;
   uiFont: string;
+  soulseekUsername?: string;
+  soulseekPassword?: string;
 }
 
 export interface LogEntry {
@@ -679,4 +681,82 @@ export async function CheckForUpdates(): Promise<UpdateCheckResult> {
 // Use directly as <audio src> — no fetch needed.
 export function GetPreviewURL(videoURL: string, seconds = 30): string {
   return `/api/video/preview?url=${encodeURIComponent(videoURL)}&seconds=${seconds}`;
+}
+
+// ============== Sources API ==============
+
+export interface SourceInfo {
+  name: string;
+  displayName: string;
+  available: boolean;
+}
+
+export async function GetSources(): Promise<SourceInfo[]> {
+  return api<SourceInfo[]>('/sources');
+}
+
+export async function SetSourcePriority(names: string[]): Promise<void> {
+  await api<void>('/sources/priority', {
+    method: 'PUT',
+    body: JSON.stringify({ priority: names }),
+  });
+}
+
+// ============== Soulseek API ==============
+
+export interface SoulseekStatus {
+  available: boolean;
+  version?: string;
+  username?: string;
+}
+
+export interface SoulseekLoginTestResult {
+  ok: boolean;
+  details: string;
+}
+
+export async function GetSoulseekStatus(): Promise<SoulseekStatus> {
+  return api<SoulseekStatus>('/soulseek/status');
+}
+
+export async function TestSoulseekLogin(username: string, password: string): Promise<SoulseekLoginTestResult> {
+  return api<SoulseekLoginTestResult>('/soulseek/login-test', {
+    method: 'POST',
+    body: JSON.stringify({ username, password }),
+  });
+}
+
+// ============== Qobuz Providers API ==============
+
+export interface QobuzProvidersConfig {
+  available: string[];
+  disabled: string[];
+}
+
+export async function GetQobuzProviders(): Promise<QobuzProvidersConfig> {
+  return api<QobuzProvidersConfig>('/qobuz/providers');
+}
+
+export async function SetQobuzProviders(disabled: string[]): Promise<void> {
+  await api<void>('/qobuz/providers', {
+    method: 'PUT',
+    body: JSON.stringify({ disabled }),
+  });
+}
+
+// ============== Universal Search API ==============
+
+export interface UniversalSearchResult {
+  title: string;
+  artist: string;
+  album?: string;
+  isrc?: string;
+  thumbnail?: string;
+  source: string;
+  url: string;
+  duration?: number;
+}
+
+export async function UniversalSearch(query: string): Promise<UniversalSearchResult[]> {
+  return api<UniversalSearchResult[]>(`/search/universal?q=${encodeURIComponent(query)}`);
 }
