@@ -37,6 +37,24 @@ jobs:
         working-directory: youflac
         run: go vet ./...
 
+  test-go:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout YouFLAC-Core
+        uses: actions/checkout@v4
+        with:
+          repository: kushiemoon-dev/YouFLAC-Core
+          path: YouFLAC-Core
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: YouFLAC-Core/go.mod
+      - name: Run tests (CGO_ENABLED=0)
+        working-directory: YouFLAC-Core
+        run: CGO_ENABLED=0 go test ./... -short -timeout 60s
+      - name: Vet
+        working-directory: YouFLAC-Core
+        run: CGO_ENABLED=0 go vet ./...
+
   test-frontend:
     runs-on: ubuntu-latest
     steps:
