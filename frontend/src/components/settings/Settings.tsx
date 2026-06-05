@@ -10,6 +10,9 @@ import { setSoundEnabled } from '../../hooks/useSoundEffects';
 import { applyFont } from '../../hooks/useFont';
 import { AccentColor, Page } from '../../types';
 import * as Api from '../../lib/api';
+import { SourcePriority } from './SourcePriority';
+import { SoulseekSetup } from './SoulseekSetup';
+import { QobuzProviders } from './QobuzProviders';
 
 interface SettingsProps {
   pendingNavigate?: Page | null;
@@ -98,11 +101,12 @@ const logLevelOptions = [
   { value: 'error', label: 'Error', description: 'Errors only' },
 ];
 
-type SettingsTab = 'general' | 'audio' | 'naming' | 'ui' | 'advanced';
+type SettingsTab = 'general' | 'audio' | 'sources' | 'naming' | 'ui' | 'advanced';
 
 const tabs: { id: SettingsTab; label: string }[] = [
   { id: 'general', label: 'General' },
   { id: 'audio', label: 'Audio' },
+  { id: 'sources', label: 'Sources' },
   { id: 'naming', label: 'Naming' },
   { id: 'ui', label: 'UI' },
   { id: 'advanced', label: 'Advanced' },
@@ -322,17 +326,9 @@ export function Settings({ pendingNavigate = null, onResolvePending, onRegisterG
 
             <section className="mb-8">
               <SectionTitle title="Audio Sources" />
-              <div className="space-y-1">
-                <SettingRow label="Audio Source Priority" description="Drag to reorder">
-                  <div className="flex gap-2">
-                    {(config.audioSourcePriority || ['tidal', 'qobuz', 'amazon']).map((source, index) => (
-                      <span key={source} className="badge badge-neutral cursor-move">
-                        {index + 1}. {source}
-                      </span>
-                    ))}
-                  </div>
-                </SettingRow>
-              </div>
+              <p className="text-sm mb-3" style={{ color: 'var(--color-text-secondary)' }}>
+                Manage source priority and provider settings in the <strong>Sources</strong> tab.
+              </p>
             </section>
 
             <section className="mb-8">
@@ -349,6 +345,37 @@ export function Settings({ pendingNavigate = null, onResolvePending, onRegisterG
                   </SettingRow>
                 )}
               </div>
+            </section>
+          </>
+        )}
+
+        {/* ── Sources Tab ── */}
+        {activeTab === 'sources' && (
+          <>
+            <section className="mb-8">
+              <SectionTitle title="Source Priority" />
+              <p className="text-sm mb-4" style={{ color: 'var(--color-text-secondary)' }}>
+                Drag sources to set the download priority order. Green dot = available.
+              </p>
+              <SourcePriority />
+            </section>
+
+            <section className="mb-8">
+              <SectionTitle title="Qobuz Providers" />
+              <p className="text-sm mb-4" style={{ color: 'var(--color-text-secondary)' }}>
+                Toggle credential-free Qobuz providers (v4.0.6+).
+              </p>
+              <QobuzProviders />
+            </section>
+
+            <section className="mb-8">
+              <SectionTitle title="Soulseek" />
+              <SoulseekSetup
+                username={config.soulseekUsername ?? ''}
+                password={config.soulseekPassword ?? ''}
+                onUsernameChange={(v) => handleChange('soulseekUsername', v)}
+                onPasswordChange={(v) => handleChange('soulseekPassword', v)}
+              />
             </section>
           </>
         )}
@@ -515,38 +542,6 @@ export function Settings({ pendingNavigate = null, onResolvePending, onRegisterG
               </div>
             </section>
 
-            <section className="mb-8">
-              <SectionTitle title="Qobuz Authentication" />
-              <div className="space-y-1">
-                <SettingRow label="App ID" description="Qobuz application ID">
-                  <input
-                    type="text"
-                    value={config.qobuzAppId || ''}
-                    onChange={(e) => handleChange('qobuzAppId', e.target.value)}
-                    placeholder="App ID"
-                    style={{ minWidth: 240 }}
-                  />
-                </SettingRow>
-                <SettingRow label="App Secret" description="Qobuz application secret">
-                  <input
-                    type="password"
-                    value={config.qobuzAppSecret || ''}
-                    onChange={(e) => handleChange('qobuzAppSecret', e.target.value)}
-                    placeholder="App Secret"
-                    style={{ minWidth: 240 }}
-                  />
-                </SettingRow>
-                <SettingRow label="User Token" description="Qobuz user authentication token">
-                  <input
-                    type="password"
-                    value={config.qobuzUserToken || ''}
-                    onChange={(e) => handleChange('qobuzUserToken', e.target.value)}
-                    placeholder="User Token"
-                    style={{ minWidth: 240 }}
-                  />
-                </SettingRow>
-              </div>
-            </section>
           </>
         )}
 
