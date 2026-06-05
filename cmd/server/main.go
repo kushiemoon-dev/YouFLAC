@@ -52,8 +52,22 @@ func main() {
 		}
 	}()
 
+	// v4 engine: SQLite ISRC cache + multi-source orchestrator
+	db, dbErr := core.NewDatabase()
+	if dbErr != nil {
+		log.Printf("Warning: database init failed, ISRC cache disabled: %v", dbErr)
+	}
+	sourceMgr := core.NewSourceManager()
+	core.RegisterAllSources(config, sourceMgr, db)
+	orchestrator := core.NewDownloadOrchestrator(sourceMgr, config.SourceOrder, nil)
+	orchestrator.SetDatabase(db)
+	queue.SetOrchestrator(orchestrator)
+	queue.SetConfig(config)
+	queue.SetHistory(history)
+
 	// Create and configure server
 	server := api.NewServer(config, queue, history, fileIndex)
+	server.SetEngineV4(sourceMgr, orchestrator)
 
 	// Set queue progress callback to broadcast via WebSocket
 	queue.SetProgressCallback(func(event core.QueueEvent) {
