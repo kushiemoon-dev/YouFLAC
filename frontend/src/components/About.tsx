@@ -155,28 +155,27 @@ export function About() {
             className="mb-4"
             style={{ color: 'var(--color-text-secondary)' }}
           >
-            YouTube Video + Lossless FLAC = Perfect MKV
+            Lossless music downloader
           </p>
 
           <span className="badge badge-accent mb-6">
-            Version {version || '3.2.0'}
+            Version {version || '4.1.0'}
           </span>
 
           <p
             className="text-sm mb-6"
             style={{ color: 'var(--color-text-tertiary)' }}
           >
-            Create high-quality music video files by combining YouTube video with lossless FLAC audio from Tidal, Qobuz, or Amazon Music.
+            Search, queue, and download lossless FLAC from Soulseek, Tidal, Qobuz, Amazon Music, and Bandcamp — with automatic source fallback and integrity verification.
           </p>
 
           {/* Tech stack */}
           <div className="flex flex-wrap justify-center gap-2 mb-6">
             <span className="badge badge-neutral">Go</span>
-            <span className="badge badge-neutral">Wails v2</span>
             <span className="badge badge-neutral">React</span>
             <span className="badge badge-neutral">TypeScript</span>
             <span className="badge badge-neutral">FFmpeg</span>
-            <span className="badge badge-neutral">yt-dlp</span>
+            <span className="badge badge-neutral">sldl</span>
           </div>
 
           {/* Links */}
