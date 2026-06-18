@@ -30,13 +30,17 @@ Every downloaded file is verified for integrity and quality (sample rate, bit de
 
 <div align="center">
 
-| Search | Queue |
-|--------|-------|
-| ![Search](youflac-search.png) | ![Queue](youflac-queue.png) |
+**Universal Search — search any track, add to queue in one click**
 
-| Source Priority & Soulseek Setup | Queue completed |
-|---------------------------------|-----------------|
-| ![Sources](youflac-sources-tab.png) | ![Done](youflac-queue-done.png) |
+![Search results](youflac-search2.png)
+
+| Home & Download Queue | Queue — FLAC downloading |
+|----------------------|--------------------------|
+| ![Home](youflac-home.png) | ![Queue](youflac-queue-done.png) |
+
+| Source Priority (drag-and-drop) | Soulseek Setup |
+|--------------------------------|----------------|
+| ![Sources](youflac-sources-tab.png) | ![Soulseek](youflac-soulseek-success.png) |
 
 </div>
 
