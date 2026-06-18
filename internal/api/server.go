@@ -31,9 +31,10 @@ type Server struct {
 // NewServer creates a new API server instance
 func NewServer(config *core.Config, queue *core.Queue, history *core.History, fileIndex *core.FileIndex) *Server {
 	app := fiber.New(fiber.Config{
-		AppName:      "YouFlac Server",
-		ServerHeader: "YouFlac",
-		BodyLimit:    50 * 1024 * 1024, // 50MB
+		AppName:        "YouFlac Server",
+		ServerHeader:   "YouFlac",
+		BodyLimit:      50 * 1024 * 1024, // 50MB
+		ReadBufferSize: 16 * 1024,        // 16KB pour gérer les gros headers (cookies)
 	})
 
 	// Create WebSocket hub
