@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useSources } from '../../hooks/useSources';
 import type { SourceInfo } from '../../lib/api';
 
@@ -9,12 +9,13 @@ export function SourcePriority() {
   const [saveError, setSaveError] = useState<string | null>(null);
   const [isDirty, setIsDirty] = useState(false);
 
-  // Sync local order with loaded sources (once)
   const initialized = useRef(false);
-  if (!initialized.current && sources.length > 0) {
-    setOrdered(sources);
-    initialized.current = true;
-  }
+  useEffect(() => {
+    if (!initialized.current && sources.length > 0) {
+      setOrdered(sources);
+      initialized.current = true;
+    }
+  }, [sources]);
 
   const dragSrc = useRef<number | null>(null);
 

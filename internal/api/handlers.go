@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -1022,7 +1023,7 @@ func (s *Server) handleUpdateCheck(c *fiber.Ctx) error {
 	}
 
 	latest := strings.TrimPrefix(payload.TagName, "v")
-	hasUpdate := latest != "" && latest != AppVersion
+	hasUpdate := latest != "" && semverGreater(latest, AppVersion)
 
 	return c.JSON(fiber.Map{
 		"currentVersion": AppVersion,
@@ -1030,4 +1031,23 @@ func (s *Server) handleUpdateCheck(c *fiber.Ctx) error {
 		"hasUpdate":      hasUpdate,
 		"releaseUrl":     payload.HTMLURL,
 	})
+}
+
+// semverGreater returns true if a > b using simple X.Y.Z integer comparison.
+func semverGreater(a, b string) bool {
+	pa := strings.SplitN(a, ".", 3)
+	pb := strings.SplitN(b, ".", 3)
+	for i := 0; i < 3; i++ {
+		var x, y int
+		if i < len(pa) {
+			x, _ = strconv.Atoi(pa[i])
+		}
+		if i < len(pb) {
+			y, _ = strconv.Atoi(pb[i])
+		}
+		if x != y {
+			return x > y
+		}
+	}
+	return false
 }
