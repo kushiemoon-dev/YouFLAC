@@ -3,6 +3,7 @@ package api
 import (
 	"os/exec"
 	"strings"
+	"time"
 
 	"github.com/gofiber/fiber/v2"
 
@@ -44,19 +45,14 @@ func (s *Server) handleSetSourcePriority(c *fiber.Ctx) error {
 
 func (s *Server) handleGetQobuzProviders(c *fiber.Ctx) error {
 	all := []string{"dab", "wjhe", "gdstudio", "musicdl"}
-	type providerStatus struct {
-		Name     string `json:"name"`
-		Disabled bool   `json:"disabled"`
+	disabledList := s.config.QobuzProvidersDisabled
+	if disabledList == nil {
+		disabledList = []string{}
 	}
-	disabled := make(map[string]bool, len(s.config.QobuzProvidersDisabled))
-	for _, d := range s.config.QobuzProvidersDisabled {
-		disabled[d] = true
-	}
-	result := make([]providerStatus, len(all))
-	for i, name := range all {
-		result[i] = providerStatus{Name: name, Disabled: disabled[name]}
-	}
-	return c.JSON(result)
+	return c.JSON(fiber.Map{
+		"available": all,
+		"disabled":  disabledList,
+	})
 }
 
 func (s *Server) handleSetQobuzProviders(c *fiber.Ctx) error {
@@ -80,13 +76,42 @@ func (s *Server) handleGetSoulseekStatus(c *fiber.Ctx) error {
 }
 
 func (s *Server) handleSoulseekLoginTest(c *fiber.Ctx) error {
+	var body struct {
+		Username string `json:"username"`
+		Password string `json:"password"`
+	}
+	_ = c.BodyParser(&body)
+
 	st := s.soulseekStatusMap()
-	ok := st["binaryFound"] == true && st["credentialsSet"] == true
-	return c.JSON(fiber.Map{"ok": ok, "details": st})
+
+	// Use body credentials if provided, fall back to saved config.
+	username := body.Username
+	password := body.Password
+	if username == "" {
+		username = s.config.SoulseekUsername
+	}
+	if password == "" {
+		password = s.config.SoulseekPassword
+	}
+
+	// Quick pre-checks before attempting a real network connection.
+	if st["binaryFound"] != true {
+		return c.JSON(fiber.Map{"ok": false, "details": st, "error": "sldl binary not found"})
+	}
+	if username == "" || password == "" {
+		return c.JSON(fiber.Map{"ok": false, "details": st, "error": "credentials not configured"})
+	}
+
+	binaryPath := core.ResolveSldlPath(s.config.SoulseekBinaryPath)
+	src := core.NewSoulseekSource(binaryPath, username, password)
+	if err := src.TestLogin(20 * time.Second); err != nil {
+		return c.JSON(fiber.Map{"ok": false, "details": st, "error": err.Error()})
+	}
+	return c.JSON(fiber.Map{"ok": true, "details": st})
 }
 
 func (s *Server) soulseekStatusMap() fiber.Map {
-	binaryPath := s.config.SoulseekBinaryPath
+	binaryPath := core.ResolveSldlPath(s.config.SoulseekBinaryPath)
 	if binaryPath == "" {
 		binaryPath = "sldl"
 	}
