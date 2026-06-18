@@ -59,8 +59,15 @@ func main() {
 	}
 	sourceMgr := core.NewSourceManager()
 	core.RegisterAllSources(config, sourceMgr, db)
-	orchestrator := core.NewDownloadOrchestrator(sourceMgr, config.SourceOrder, nil)
+	orchestratorLog := core.NewLogBuffer(500)
+	orchestrator := core.NewDownloadOrchestrator(sourceMgr, config.SourceOrder, orchestratorLog)
 	orchestrator.SetDatabase(db)
+	if config.VerifyDownloads {
+		orchestrator.SetVerifyPolicy(&core.VerifyPolicy{
+			MinSampleRate: config.VerifyMinSampleRate,
+			MinBitDepth:   config.VerifyMinBitDepth,
+		})
+	}
 	queue.SetOrchestrator(orchestrator)
 	queue.SetConfig(config)
 	queue.SetHistory(history)
