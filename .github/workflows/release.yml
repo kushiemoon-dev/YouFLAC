@@ -179,18 +179,17 @@ jobs:
           merge-multiple: true
       - uses: softprops/action-gh-release@v2
         with:
+          make_latest: true
           generate_release_notes: true
           body: |
-            ## Docker
+            ## Install
 
+            **Docker:**
             ```bash
             docker pull ghcr.io/${{ github.repository_owner }}/youflac:${{ github.ref_name }}
             ```
 
-            ## Binaries
-
-            Download the archive for your platform, extract, and run `./youflac-server`.
-            The `frontend/dist/` directory must remain alongside the binary.
+            **Binary:** download the archive for your platform below, extract, and run `./youflac-server`.
 
           files: |
             youflac-server-linux-amd64.tar.gz
