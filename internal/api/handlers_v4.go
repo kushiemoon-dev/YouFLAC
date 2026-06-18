@@ -140,16 +140,3 @@ func sldlVersion(binaryPath string) string {
 	return strings.SplitN(strings.TrimSpace(string(out)), "\n", 2)[0]
 }
 
-// ── Universal search ───────────────────────────────────────────────────────
-
-func (s *Server) handleUniversalSearch(c *fiber.Ctx) error {
-	q := c.Query("q")
-	if q == "" {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "q is required"})
-	}
-	tracks, err := core.SearchDeezerTracks(q, 20)
-	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
-	}
-	return c.JSON(fiber.Map{"tracks": tracks, "total": len(tracks)})
-}
