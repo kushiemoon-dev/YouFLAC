@@ -754,22 +754,3 @@ export async function SetQobuzProviders(disabled: string[]): Promise<void> {
   });
 }
 
-// ============== Universal Search API ==============
-
-export interface UniversalSearchResult {
-  title: string;
-  artist: string;
-  album?: string;
-  isrc?: string;
-  coverUrl?: string;   // cover art URL (was: thumbnail)
-  sourceUrl?: string;  // playback/catalog URL (was: url)
-  source: string;
-  duration?: number;
-}
-
-export async function UniversalSearch(query: string): Promise<UniversalSearchResult[]> {
-  const res = await api<{ tracks: UniversalSearchResult[]; total: number }>(
-    `/search/universal?q=${encodeURIComponent(query)}`
-  );
-  return res.tracks ?? [];
-}
