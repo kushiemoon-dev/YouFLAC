@@ -2,16 +2,16 @@
 
 <img src="banner.png" alt="YouFLAC" width="600">
 
-### YouTube Video + Lossless FLAC Audio = Perfect MKV
+### Lossless music downloader — Soulseek · Tidal · Qobuz · Amazon · Bandcamp
 
 [![GitHub Release](https://img.shields.io/github/v/release/kushiemoon-dev/YouFLAC?style=flat-square&color=e91e8c)](https://github.com/kushiemoon-dev/YouFLAC/releases/latest)
 [![ghcr.io](https://img.shields.io/badge/ghcr.io-youflac-2496ED?style=flat-square&logo=docker&logoColor=white)](https://github.com/kushiemoon-dev/YouFLAC/pkgs/container/youflac)
 [![License](https://img.shields.io/github/license/kushiemoon-dev/YouFLAC?style=flat-square&color=gray)](LICENSE)
 [![Go](https://img.shields.io/badge/Go-1.25-00ADD8?style=flat-square&logo=go&logoColor=white)](https://go.dev)
 
-![Windows](https://img.shields.io/badge/Windows-10+-0078D6?style=flat-square&logo=windows&logoColor=white)
-![macOS](https://img.shields.io/badge/macOS-10.13+-000000?style=flat-square&logo=apple&logoColor=white)
 ![Linux](https://img.shields.io/badge/Linux-any-FCC624?style=flat-square&logo=linux&logoColor=black)
+![macOS](https://img.shields.io/badge/macOS-Apple_Silicon-000000?style=flat-square&logo=apple&logoColor=white)
+![Windows](https://img.shields.io/badge/Windows-10+-0078D6?style=flat-square&logo=windows&logoColor=white)
 ![Docker](https://img.shields.io/badge/Docker-supported-2496ED?style=flat-square&logo=docker&logoColor=white)
 
 </div>
@@ -20,34 +20,56 @@
 
 ## Overview
 
-**YouFLAC** combines the best of both worlds: it downloads a YouTube video and replaces the audio track with a lossless FLAC sourced from Tidal, Qobuz, or Amazon Music — producing a perfect `.mkv` file with Hi-Res audio and full 4K video.
+**YouFLAC** is a self-hosted lossless music downloader with a clean web UI. Search for any track, add it to a queue, and YouFLAC fetches the best available FLAC from Soulseek, Tidal, Qobuz, Amazon Music, or Bandcamp — automatically falling back through sources in your configured priority order.
+
+Every downloaded file is verified for integrity and quality (sample rate, bit depth, true-lossless flag) before it lands in your library. Bad files are silently discarded and the next source is tried.
+
+---
+
+## Screenshots
 
 <div align="center">
-<img src="showcase.gif" alt="YouFLAC Showcase" width="860">
+
+| Search | Queue |
+|--------|-------|
+| ![Search](youflac-search.png) | ![Queue](youflac-queue.png) |
+
+| Source Priority & Soulseek Setup | Queue completed |
+|---------------------------------|-----------------|
+| ![Sources](youflac-sources-tab.png) | ![Done](youflac-queue-done.png) |
+
 </div>
 
 ---
 
 ## Features
 
-- **4K Video** — Best quality video from YouTube (AV1/VP9, up to 4K)
-- **Lossless Audio** — FLAC sourced from Tidal, Qobuz, or Amazon Music
-- **Smart Matching** — Auto-matches YouTube video to the correct audio track via song.link and ISRC
-- **Quality Fallback** — Automatically falls back to next available source if preferred is unavailable
-- **MKV Output** — Muxes video + FLAC into a single MKV container with proper metadata
-- **Queue System** — Concurrent downloads with pause, resume, and retry support
-- **Playlist Support** — Auto-generates `.m3u8` playlist after batch downloads
-- **Lyrics** — Fetches synced lyrics from LRCLIB (embed in MKV or `.lrc` file)
-- **NFO Files** — Generates metadata files for Jellyfin, Plex, and Kodi
-- **Structured Logging** — Configurable log level and format via environment variables
-- **Proxy Support** — Route all requests through a custom HTTP proxy
-- **Docker + Native** — Run as a web app in Docker or as a native desktop app
+- **Universal Search** — search across Deezer's catalog; click to add any track to the queue
+- **Multi-Source Fallback** — Soulseek · Tidal · Qobuz · Amazon Music · Bandcamp, tried in your priority order
+- **FLAC Verification** — integrity check + sample rate/bit depth/lossless validation; rejects fake-lossless files
+- **Soulseek via sldl** — shells out to [slsk-batchdl](https://github.com/fiso64/slsk-batchdl) (v2.6+); includes a real login connectivity test
+- **Source Priority UI** — drag-and-drop reorder directly in the settings panel
+- **Queue System** — concurrent downloads with live progress, retry, and WebSocket updates
+- **Playlist** — auto-generates `.m3u8` after batch downloads
+- **NFO + Lyrics** — metadata files for Jellyfin/Plex/Kodi, synced lyrics from LRCLIB
+- **Docker + Native** — ships as a single binary or Docker image (amd64 / arm64)
 
 ---
 
 ## Install
 
-### Docker
+### Docker Compose (recommended)
+
+```bash
+git clone https://github.com/kushiemoon-dev/YouFLAC.git
+cd YouFLAC
+cp .env.example .env   # fill in your credentials
+docker compose up -d
+```
+
+Access the UI at **http://localhost:8080**
+
+### Docker Run
 
 ```bash
 docker run -d \
@@ -55,20 +77,12 @@ docker run -d \
   -p 8080:8080 \
   -v ./config:/config \
   -v ./downloads:/downloads \
+  -e SOULSEEK_USERNAME=you \
+  -e SOULSEEK_PASSWORD=secret \
   ghcr.io/kushiemoon-dev/youflac:latest
 ```
 
-Or with `docker-compose`:
-
-```bash
-git clone https://github.com/kushiemoon-dev/YouFLAC.git
-cd YouFLAC
-docker compose up -d
-```
-
-Access the web UI at **http://localhost:8080**
-
-### Native Binaries
+### Native Binary
 
 **[⬇ Download Latest Release](https://github.com/kushiemoon-dev/YouFLAC/releases/latest)**
 
@@ -80,102 +94,116 @@ Access the web UI at **http://localhost:8080**
 | Windows x86_64 | `youflac-server-windows-amd64.zip` |
 
 ```bash
-# Linux / macOS
 tar -xzf youflac-server-linux-amd64.tar.gz
 cd youflac-server-linux-amd64
 ./youflac-server
 ```
 
-```powershell
-# Windows — extract the zip, then:
-.\youflac-server.exe
-```
-
-> **Note:** Native binaries require **FFmpeg** and **yt-dlp** in PATH. The Docker image bundles both.
-
----
-
-## Requirements (Native only)
-
-| Tool | Install |
-|------|---------|
-| **FFmpeg** | `sudo pacman -S ffmpeg` / `brew install ffmpeg` / `choco install ffmpeg` |
-| **yt-dlp** | `sudo pacman -S yt-dlp` / `brew install yt-dlp` / `pip install yt-dlp` |
+> **Note:** Native binaries require **FFmpeg** and **ffprobe** in PATH.  
+> Soulseek requires [slsk-batchdl](https://github.com/fiso64/slsk-batchdl) v2.6+ (`sldl` binary).
 
 ---
 
 ## Configuration
 
-All settings can be configured via environment variables or through the web UI.
+All options can be set via environment variables or through the web UI.
+
+### Core
 
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `PORT` | `8080` | HTTP server port |
 | `OUTPUT_DIR` | `/downloads` | Download output directory |
-| `CONFIG_DIR` | `/config` | Config file directory |
-| `VIDEO_QUALITY` | `best` | `best`, `1080p`, `720p`, `480p` |
+| `CONFIG_DIR` | `/config` | Config and database directory |
 | `CONCURRENT_DOWNLOADS` | `2` | Parallel downloads (1–5) |
 | `NAMING_TEMPLATE` | `jellyfin` | `jellyfin`, `plex`, `flat`, `album`, `year` |
-| `GENERATE_NFO` | `true` | Generate NFO metadata files |
-| `EMBED_COVER_ART` | `true` | Embed cover art in MKV |
-| `LYRICS_ENABLED` | `false` | Fetch lyrics automatically |
-| `LYRICS_EMBED_MODE` | `lrc` | `lrc`, `embed`, `both` |
 | `LOG_LEVEL` | `info` | `debug`, `info`, `warn`, `error` |
-| `LOG_FORMAT` | `text` | `text`, `json` |
-| `PROXY_URL` | _(none)_ | HTTP proxy for all outbound requests |
-| `DOWNLOAD_TIMEOUT_MINUTES` | `10` | Per-download timeout |
 
-Config file location:
-- **Docker**: `/config/config.json`
-- **Linux**: `~/.config/youflac/config.json`
-- **macOS**: `~/Library/Application Support/youflac/config.json`
-- **Windows**: `%APPDATA%\youflac\config.json`
+### Sources
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `SOURCE_ORDER` | `tidal,qobuz,amazon,bandcamp,soulseek` | Fallback order for source selection |
+| `SOULSEEK_USERNAME` | _(none)_ | Soulseek account username |
+| `SOULSEEK_PASSWORD` | _(none)_ | Soulseek account password |
+| `SOULSEEK_BINARY_PATH` | _(auto)_ | Path to `sldl` binary (auto-detected if in PATH) |
+
+### Verification
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `VERIFY_DOWNLOADS` | `true` | Verify every FLAC before accepting it |
+| `VERIFY_MIN_SAMPLE_RATE` | `44100` | Reject files below this sample rate (Hz) |
+| `VERIFY_MIN_BIT_DEPTH` | `16` | Reject files below this bit depth |
+
+### Output
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `GENERATE_NFO` | `true` | Generate NFO metadata files |
+| `EMBED_COVER_ART` | `true` | Embed cover art in output files |
+| `LYRICS_ENABLED` | `false` | Fetch synced lyrics automatically |
+| `LYRICS_EMBED_MODE` | `lrc` | `lrc`, `embed`, `both` |
 
 ---
 
 ## How It Works
 
 ```
-YouTube URL
-     │
-     ├──────────────────────┐
-     ▼                      ▼
- yt-dlp                song.link API
- 4K Video DL           Cross-platform resolve
-                            │
-                     ┌──────┴───────┐
-                     ▼              ▼
-                   Tidal          Qobuz
-                   FLAC           FLAC
-                     └──────┬───────┘
-                            ▼
-                     Amazon Music
-                       FLAC fallback
-                            │
-     ┌──────────────────────┘
-     ▼
- FFmpeg Mux
- Video + FLAC → MKV
-     │
-     ▼
- NFO + Cover Art + Lyrics
+Search query (title + artist)
+        │
+        ▼
+   Deezer API ──► ISRC + normalized metadata
+        │
+        ▼
+    Queue entry (metadata-first, no URL required)
+        │
+        ▼
+  Source Orchestrator
+  (tries sources in SOURCE_ORDER)
+        │
+   ┌────┴────┬────────┬──────────┬───────────┐
+   ▼         ▼        ▼          ▼           ▼
+Soulseek   Tidal   Qobuz    Amazon Music  Bandcamp
+ (sldl)    FLAC    FLAC        FLAC         FLAC
+   └────┬────┴────────┴──────────┴───────────┘
+        │ first success
+        ▼
+  FLAC Verification
+  (flac -t · ffprobe quality check)
+        │
+   pass ▼         fail ──► try next source
+  Output file
+  + NFO + Lyrics
 ```
 
 ---
 
-## API Endpoints
+## Soulseek Setup
+
+1. Install [slsk-batchdl](https://github.com/fiso64/slsk-batchdl) (v2.6+) and place `sldl` somewhere in PATH or set `SOULSEEK_BINARY_PATH`
+2. Set `SOULSEEK_USERNAME` and `SOULSEEK_PASSWORD` (env vars or Settings UI)
+3. Use the **Test Login** button in Settings → Sources to verify connectivity before downloading
+
+The Docker image bundles a pre-compiled `sldl` for linux/amd64 and linux/arm64.
+
+---
+
+## API
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | `GET` | `/api/health` | Health check |
+| `GET` | `/api/version` | Current version |
 | `GET` | `/api/queue` | List queue items |
-| `POST` | `/api/queue` | Add item to queue |
+| `POST` | `/api/queue` | Add item (URL or metadata) |
 | `POST` | `/api/queue/:id/pause` | Pause an item |
 | `POST` | `/api/queue/:id/resume` | Resume an item |
 | `POST` | `/api/queue/retry-failed` | Retry all failed items |
-| `GET` | `/api/queue/failed/export` | Export failed items as `.txt` |
-| `GET` | `/api/services/status` | Audio service health check |
-| `GET` | `/api/version` | Current version |
+| `GET` | `/api/search/universal?q=` | Search via Deezer |
+| `GET` | `/api/sources` | List registered sources and status |
+| `POST` | `/api/soulseek/login-test` | Test Soulseek credentials |
+| `GET` | `/api/services/status` | Source service health |
 
 ---
 
@@ -186,31 +214,32 @@ git clone https://github.com/kushiemoon-dev/YouFLAC.git
 cd YouFLAC
 
 # Build frontend
-cd frontend && npm ci && npm run build && cd ..
+cd frontend && pnpm install --frozen-lockfile && pnpm build && cd ..
 
-# Build server binary
+# Build server
 go build -o youflac-server ./cmd/server
 
 # Run
 ./youflac-server
 ```
 
+Requires Go 1.25+, Node.js 22+, pnpm 11+.
+
 ---
 
 ## Credits
 
-- [yt-dlp](https://github.com/yt-dlp/yt-dlp) — Video downloading
-- [FFmpeg](https://ffmpeg.org) — Media muxing
+- [slsk-batchdl](https://github.com/fiso64/slsk-batchdl) — Soulseek batch downloader
+- [FFmpeg](https://ffmpeg.org) — Media processing and verification
 - [Fiber](https://gofiber.io) — HTTP framework
-- [song.link](https://song.link) — Cross-platform music linking
-- [LRCLIB](https://lrclib.net) — Synced lyrics database
-- Inspired by [SpotiFLAC](https://github.com/afkarxyz/SpotiFLAC)
+- [Deezer API](https://developers.deezer.com) — Track search and ISRC enrichment
+- [LRCLIB](https://lrclib.net) — Synced lyrics
 
 ---
 
 ## Disclaimer
 
-YouFLAC is intended for **educational and private use only**. It is not affiliated with, endorsed by, or connected to YouTube, Tidal, Qobuz, Amazon Music, or any other streaming service. By using this tool, you agree to comply with all applicable laws and the Terms of Service of the platforms involved. The developers assume no liability for any misuse.
+YouFLAC is intended for **personal and educational use only**. It is not affiliated with Soulseek, Tidal, Qobuz, Amazon Music, Bandcamp, or Deezer. By using this tool you agree to comply with all applicable laws and the terms of service of the platforms involved. The developers assume no liability for any misuse.
 
 ---
 
