@@ -25,7 +25,7 @@ export function Home() {
     <div className="min-h-screen">
       <Header
         title="YouFLAC"
-        subtitle="Lossless music downloader"
+        subtitle="YouTube Video + Lossless FLAC = Perfect MKV"
       />
 
       <div className="px-4 md:px-8 pb-8 space-y-8">

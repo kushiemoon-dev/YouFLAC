@@ -10,13 +10,6 @@ const HomeIcon = () => (
   </svg>
 );
 
-const SearchIcon = () => (
-  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <circle cx="11" cy="11" r="8" />
-    <line x1="21" y1="21" x2="16.65" y2="16.65" />
-  </svg>
-);
-
 const SettingsIcon = () => (
   <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <circle cx="12" cy="12" r="3" />
@@ -105,7 +98,6 @@ export function Sidebar({ activePage, onNavigate }: SidebarProps) {
 
   const navItems: { id: Page; icon: React.FC; label: string; targetPage: Page; iconClass: string }[] = [
     { id: 'home', icon: HomeIcon, label: 'Home', targetPage: 'home', iconClass: 'icon-home' },
-    { id: 'search', icon: SearchIcon, label: 'Search', targetPage: 'search', iconClass: 'icon-search' },
     { id: 'history', icon: HistoryIcon, label: 'History', targetPage: 'history', iconClass: 'icon-history' },
     { id: 'files', icon: FolderIcon, label: 'Files', targetPage: 'files', iconClass: 'icon-files' },
     { id: 'converter', icon: ConverterIcon, label: 'Converter', targetPage: 'converter', iconClass: 'icon-converter' },

@@ -5,4 +5,3 @@ export { useSoundEffects, playSound, setSoundEnabled } from './useSoundEffects';
 export { useHistory } from './useHistory';
 export { useSources } from './useSources';
 export { useSoulseek } from './useSoulseek';
-export { useUniversalSearch } from './useUniversalSearch';

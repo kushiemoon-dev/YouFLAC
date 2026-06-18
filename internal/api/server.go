@@ -180,9 +180,6 @@ func (s *Server) setupRoutes() {
 	api.Get("/soulseek/status", s.handleGetSoulseekStatus)
 	api.Post("/soulseek/login-test", s.handleSoulseekLoginTest)
 
-	// v4 — Universal search (Deezer)
-	api.Get("/search/universal", s.handleUniversalSearch)
-
 	// System / ffmpeg
 	api.Get("/system/ffmpeg/status", s.handleFFmpegStatus)
 	api.Post("/system/ffmpeg/install", s.handleFFmpegInstall)
