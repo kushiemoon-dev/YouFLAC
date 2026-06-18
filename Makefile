@@ -7,7 +7,7 @@ test-race:
 	go test ./... -short -timeout 60s -race
 
 test-frontend:
-	cd frontend && npm ci && npx tsc --noEmit
+	cd frontend && pnpm install --frozen-lockfile && pnpm exec tsc --noEmit
 
 lint:
 	golangci-lint run ./...
