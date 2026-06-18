@@ -2,7 +2,7 @@
 
 <img src="banner.png" alt="YouFLAC" width="600">
 
-### Lossless music downloader — Soulseek · Tidal · Qobuz · Amazon · Bandcamp
+### YouTube Video + Lossless FLAC = Perfect MKV
 
 [![GitHub Release](https://img.shields.io/github/v/release/kushiemoon-dev/YouFLAC?style=flat-square&color=e91e8c)](https://github.com/kushiemoon-dev/YouFLAC/releases/latest)
 [![ghcr.io](https://img.shields.io/badge/ghcr.io-youflac-2496ED?style=flat-square&logo=docker&logoColor=white)](https://github.com/kushiemoon-dev/YouFLAC/pkgs/container/youflac)
@@ -20,9 +20,13 @@
 
 ## Overview
 
-**YouFLAC** is a self-hosted lossless music downloader with a clean web UI. Search for any track, add it to a queue, and YouFLAC fetches the best available FLAC from Soulseek, Tidal, Qobuz, Amazon Music, or Bandcamp — automatically falling back through sources in your configured priority order.
+**YouFLAC** (**You**Tube + **FLAC**) is a self-hosted web app that combines YouTube video downloads with lossless audio. Paste a YouTube (or Spotify / Tidal) URL, and YouFLAC:
 
-Every downloaded file is verified for integrity and quality (sample rate, bit depth, true-lossless flag) before it lands in your library. Bad files are silently discarded and the next source is tried.
+1. Downloads the video via **yt-dlp**
+2. Fetches the best available **lossless FLAC** from **Soulseek** first, with automatic fallback to Tidal, Qobuz, Amazon Music, or Bandcamp
+3. Muxes video + FLAC into a single **MKV** file via FFmpeg
+
+Every FLAC is verified for integrity and quality (sample rate, bit depth, true-lossless flag) before muxing. Bad files are discarded and the next source is tried automatically.
 
 ---
 
@@ -30,12 +34,8 @@ Every downloaded file is verified for integrity and quality (sample rate, bit de
 
 <div align="center">
 
-**Universal Search — search any track, add to queue in one click**
-
-![Search results](youflac-search2.png)
-
-| Home & Download Queue | Queue — FLAC downloading |
-|----------------------|--------------------------|
+| Home — paste any YouTube URL | Download Queue |
+|------------------------------|----------------|
 | ![Home](youflac-home.png) | ![Queue](youflac-queue-done.png) |
 
 | Source Priority (drag-and-drop) | Soulseek Setup |
@@ -48,10 +48,11 @@ Every downloaded file is verified for integrity and quality (sample rate, bit de
 
 ## Features
 
-- **Universal Search** — search across Deezer's catalog; click to add any track to the queue
-- **Multi-Source Fallback** — Soulseek · Tidal · Qobuz · Amazon Music · Bandcamp, tried in your priority order
-- **FLAC Verification** — integrity check + sample rate/bit depth/lossless validation; rejects fake-lossless files
-- **Soulseek via sldl** — shells out to [slsk-batchdl](https://github.com/fiso64/slsk-batchdl) (v2.6+); includes a real login connectivity test
+- **YouTube → MKV** — paste any YouTube, Spotify, or Tidal URL; yt-dlp downloads the video, Soulseek provides the FLAC, FFmpeg muxes both into a high-quality `.mkv`
+- **Playlists & Channels** — batch-download full YouTube playlists or channels
+- **Soulseek as primary FLAC source** — via [slsk-batchdl](https://github.com/fiso64/slsk-batchdl) (v2.6+); includes a real login connectivity test
+- **Multi-Source Fallback** — Soulseek → Tidal → Qobuz → Amazon Music → Bandcamp, tried in your configured priority order
+- **FLAC Verification** — integrity check + sample rate/bit depth/lossless validation before muxing; rejects fake-lossless files
 - **Source Priority UI** — drag-and-drop reorder directly in the settings panel
 - **Queue System** — concurrent downloads with live progress, retry, and WebSocket updates
 - **Playlist** — auto-generates `.m3u8` after batch downloads
@@ -103,7 +104,7 @@ cd youflac-server-linux-amd64
 ./youflac-server
 ```
 
-> **Note:** Native binaries require **FFmpeg** and **ffprobe** in PATH.  
+> **Note:** Native binaries require **FFmpeg**, **ffprobe**, and **yt-dlp** in PATH.  
 > Soulseek requires [slsk-batchdl](https://github.com/fiso64/slsk-batchdl) v2.6+ (`sldl` binary).
 
 ---
@@ -127,10 +128,17 @@ All options can be set via environment variables or through the web UI.
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `SOURCE_ORDER` | `tidal,qobuz,amazon,bandcamp,soulseek` | Fallback order for source selection |
+| `SOURCE_ORDER` | `soulseek,tidal,qobuz,amazon,bandcamp` | Fallback order for FLAC source selection |
 | `SOULSEEK_USERNAME` | _(none)_ | Soulseek account username |
 | `SOULSEEK_PASSWORD` | _(none)_ | Soulseek account password |
 | `SOULSEEK_BINARY_PATH` | _(auto)_ | Path to `sldl` binary (auto-detected if in PATH) |
+
+### Video
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `VIDEO_QUALITY` | `best` | yt-dlp video quality: `best`, `1080p`, `720p`, `480p` |
+| `COOKIES_BROWSER` | _(none)_ | Browser to extract cookies from for age-restricted videos: `firefox`, `chrome`, `chromium`, `brave`, `opera`, `edge` |
 
 ### Verification
 
@@ -144,6 +152,7 @@ All options can be set via environment variables or through the web UI.
 
 | Variable | Default | Description |
 |----------|---------|-------------|
+| `OUTPUT_DIR` | `~/MusicVideos` | Download output directory (Docker: `/downloads`) |
 | `GENERATE_NFO` | `true` | Generate NFO metadata files |
 | `EMBED_COVER_ART` | `true` | Embed cover art in output files |
 | `LYRICS_ENABLED` | `false` | Fetch synced lyrics automatically |
@@ -154,31 +163,32 @@ All options can be set via environment variables or through the web UI.
 ## How It Works
 
 ```
-Search query (title + artist)
+YouTube / Spotify / Tidal URL
         │
-        ▼
-   Deezer API ──► ISRC + normalized metadata
-        │
-        ▼
-    Queue entry (metadata-first, no URL required)
-        │
-        ▼
-  Source Orchestrator
-  (tries sources in SOURCE_ORDER)
-        │
-   ┌────┴────┬────────┬──────────┬───────────┐
-   ▼         ▼        ▼          ▼           ▼
-Soulseek   Tidal   Qobuz    Amazon Music  Bandcamp
- (sldl)    FLAC    FLAC        FLAC         FLAC
-   └────┬────┴────────┴──────────┴───────────┘
-        │ first success
-        ▼
-  FLAC Verification
-  (flac -t · ffprobe quality check)
-        │
-   pass ▼         fail ──► try next source
-  Output file
-  + NFO + Lyrics
+   ┌────┴──────────────────────────┐
+   ▼                               ▼
+yt-dlp (video)         Source Orchestrator (FLAC)
+   │                   (SOURCE_ORDER: soulseek first)
+   │                        │
+   │              ┌─────────┼──────────┬───────────┐
+   │              ▼         ▼          ▼           ▼
+   │           Soulseek   Tidal     Qobuz    Amazon/Bandcamp
+   │            (sldl)    FLAC      FLAC         FLAC
+   │              └─────────┼──────────┴───────────┘
+   │                        │ first success
+   │                        ▼
+   │                 FLAC Verification
+   │                 (integrity + sample rate / bit depth)
+   │                        │
+   │                   pass ▼     fail ──► try next source
+   └──────────────► FFmpeg mux (-f matroska)
+                            │
+                            ▼
+                      Output .mkv
+                   + NFO + Lyrics
+
+  Note: if video download fails (geo-block, age-restrict),
+  YouFLAC falls back to audio-only and outputs .flac instead.
 ```
 
 ---
@@ -204,7 +214,6 @@ The Docker image bundles a pre-compiled `sldl` for linux/amd64 and linux/arm64.
 | `POST` | `/api/queue/:id/pause` | Pause an item |
 | `POST` | `/api/queue/:id/resume` | Resume an item |
 | `POST` | `/api/queue/retry-failed` | Retry all failed items |
-| `GET` | `/api/search/universal?q=` | Search via Deezer |
 | `GET` | `/api/sources` | List registered sources and status |
 | `POST` | `/api/soulseek/login-test` | Test Soulseek credentials |
 | `GET` | `/api/services/status` | Source service health |
@@ -233,10 +242,11 @@ Requires Go 1.25+, Node.js 22+, pnpm 11+.
 
 ## Credits
 
+- [yt-dlp](https://github.com/yt-dlp/yt-dlp) — YouTube video downloading
 - [slsk-batchdl](https://github.com/fiso64/slsk-batchdl) — Soulseek batch downloader
-- [FFmpeg](https://ffmpeg.org) — Media processing and verification
+- [FFmpeg](https://ffmpeg.org) — Video/audio muxing and verification
 - [Fiber](https://gofiber.io) — HTTP framework
-- [Deezer API](https://developers.deezer.com) — Track search and ISRC enrichment
+- [Deezer API](https://developers.deezer.com) — ISRC enrichment during downloads
 - [LRCLIB](https://lrclib.net) — Synced lyrics
 
 ---

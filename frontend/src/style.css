@@ -746,11 +746,6 @@ button:disabled {
     animation: icon-bounce 0.4s ease;
   }
 
-  /* Search — magnify */
-  .sidebar-item:hover .icon-search {
-    animation: icon-magnify 0.3s ease;
-  }
-
   /* History — quarter turn */
   .sidebar-item:hover .icon-history {
     animation: icon-quarter-turn 0.4s ease;
