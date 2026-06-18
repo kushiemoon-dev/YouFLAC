@@ -23,8 +23,18 @@ services:
       # Lyrics
       - LYRICS_ENABLED=${LYRICS_ENABLED:-false}
       - LYRICS_EMBED_MODE=${LYRICS_EMBED_MODE:-lrc}
-      # Audio source priority (comma-separated)
-      - AUDIO_SOURCE_PRIORITY=${AUDIO_SOURCE_PRIORITY:-tidal,qobuz,amazon}
+      # Audio source priority (comma-separated) — UI display order only
+      - AUDIO_SOURCE_PRIORITY=${AUDIO_SOURCE_PRIORITY:-tidal,qobuz,amazon,bandcamp,soulseek}
+      # Source fallback order used by the download orchestrator (separate from UI priority)
+      - SOURCE_ORDER=${SOURCE_ORDER:-tidal,qobuz,amazon,bandcamp,soulseek}
+      # Soulseek credentials (required to activate Soulseek source; amd64 Docker only)
+      - SOULSEEK_USERNAME=${SOULSEEK_USERNAME:-}
+      - SOULSEEK_PASSWORD=${SOULSEEK_PASSWORD:-}
+      - SOULSEEK_BINARY_PATH=${SOULSEEK_BINARY_PATH:-}
+      # Download verification (FLAC integrity + quality gate)
+      - VERIFY_DOWNLOADS=${VERIFY_DOWNLOADS:-true}
+      - VERIFY_MIN_SAMPLE_RATE=${VERIFY_MIN_SAMPLE_RATE:-44100}
+      - VERIFY_MIN_BIT_DEPTH=${VERIFY_MIN_BIT_DEPTH:-16}
       # YouTube anti-bot (optional)
       - COOKIES_BROWSER=${COOKIES_BROWSER:-}
       # UI settings
