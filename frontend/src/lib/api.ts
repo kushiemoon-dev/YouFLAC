@@ -46,9 +46,15 @@ export interface LogEntry {
 }
 
 export interface DownloadRequest {
-  videoUrl: string;
+  videoUrl?: string;
   spotifyUrl?: string;
   quality?: string;
+  // Metadata-first path: set these instead of videoUrl for search results.
+  title?: string;
+  artist?: string;
+  album?: string;
+  thumbnail?: string;
+  isrc?: string;
 }
 
 export interface MatchDiagnostics {
@@ -706,13 +712,17 @@ export async function SetSourcePriority(names: string[]): Promise<void> {
 
 export interface SoulseekStatus {
   available: boolean;
+  binaryFound?: boolean;
+  binaryPath?: string;
+  credentialsSet?: boolean;
   version?: string;
   username?: string;
 }
 
 export interface SoulseekLoginTestResult {
   ok: boolean;
-  details: string;
+  details?: Record<string, unknown>;
+  error?: string;
 }
 
 export async function GetSoulseekStatus(): Promise<SoulseekStatus> {
@@ -751,12 +761,15 @@ export interface UniversalSearchResult {
   artist: string;
   album?: string;
   isrc?: string;
-  thumbnail?: string;
+  coverUrl?: string;   // cover art URL (was: thumbnail)
+  sourceUrl?: string;  // playback/catalog URL (was: url)
   source: string;
-  url: string;
   duration?: number;
 }
 
 export async function UniversalSearch(query: string): Promise<UniversalSearchResult[]> {
-  return api<UniversalSearchResult[]>(`/search/universal?q=${encodeURIComponent(query)}`);
+  const res = await api<{ tracks: UniversalSearchResult[]; total: number }>(
+    `/search/universal?q=${encodeURIComponent(query)}`
+  );
+  return res.tracks ?? [];
 }

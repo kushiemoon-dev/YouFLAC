@@ -27,10 +27,16 @@ export function UniversalSearch() {
   }, [query, search]);
 
   const handleAddToQueue = async (result: Api.UniversalSearchResult) => {
-    setAddingIsrc(result.isrc ?? result.url);
+    setAddingIsrc(result.isrc ?? result.sourceUrl ?? result.title);
     setAddError(null);
     try {
-      await Api.AddToQueue({ videoUrl: result.url });
+      await Api.AddToQueue({
+        title: result.title,
+        artist: result.artist,
+        album: result.album,
+        thumbnail: result.coverUrl,
+        isrc: result.isrc,
+      });
     } catch (err) {
       setAddError(err instanceof Error ? err.message : 'Failed to add to queue');
     } finally {
@@ -86,8 +92,8 @@ export function UniversalSearch() {
         {!loading && results.length > 0 && (
           <div className="grid gap-3">
             {results.map((result, i) => {
-              const itemKey = result.isrc ?? `${result.url}-${i}`;
-              const isAdding = addingIsrc === (result.isrc ?? result.url);
+              const itemKey = result.isrc ?? `${result.sourceUrl ?? result.title}-${i}`;
+              const isAdding = addingIsrc === (result.isrc ?? result.sourceUrl ?? result.title);
               return (
                 <div
                   key={itemKey}
@@ -95,9 +101,9 @@ export function UniversalSearch() {
                   style={{ background: 'var(--color-bg-secondary)', border: '1px solid var(--color-border-subtle)' }}
                 >
                   {/* Thumbnail */}
-                  {result.thumbnail ? (
+                  {result.coverUrl ? (
                     <img
-                      src={result.thumbnail}
+                      src={result.coverUrl}
                       alt=""
                       className="w-12 h-12 rounded object-cover flex-shrink-0"
                     />
