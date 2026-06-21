@@ -56,6 +56,4 @@ require (
 	modernc.org/sqlite v1.37.1 // indirect
 )
 
-// replace github.com/wailsapp/wails/v2 v2.11.0 => /home/kushie/go/pkg/mod
-
 replace github.com/kushiemoon-dev/youflac-core => ../YouFLAC-Core
