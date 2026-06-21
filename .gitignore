@@ -14,6 +14,7 @@ build/bin/
 *.dmg
 youflac
 youflac-server
+server
 mkv-video
 
 # Frontend

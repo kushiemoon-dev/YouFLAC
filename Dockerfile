@@ -4,17 +4,17 @@
 # ============================================
 # Stage 1: Build Frontend
 # ============================================
-FROM node:20-alpine AS frontend-builder
+FROM node:22-alpine AS frontend-builder
 
 WORKDIR /app/frontend
 
 # Copy package files first for better caching
-COPY frontend/package.json ./
-RUN npm install --silent
+COPY frontend/package.json frontend/pnpm-lock.yaml ./
+RUN corepack enable && pnpm install --frozen-lockfile
 
 # Copy frontend source and build
 COPY frontend/ ./
-RUN npm run build
+RUN pnpm run build
 
 # ============================================
 # Stage 2: Build Backend
