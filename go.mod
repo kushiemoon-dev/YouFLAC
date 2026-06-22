@@ -3,7 +3,7 @@ module youflac
 go 1.25
 
 require (
-	github.com/gofiber/fiber/v2 v2.52.12
+	github.com/gofiber/fiber/v2 v2.52.13
 	github.com/gofiber/websocket/v2 v2.2.1
 	github.com/kushiemoon-dev/youflac-core v0.0.0-00010101000000-000000000000
 	github.com/wailsapp/wails/v2 v2.11.0
