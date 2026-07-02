@@ -35,6 +35,9 @@ export interface Config {
   uiFont: string;
   soulseekUsername?: string;
   soulseekPassword?: string;
+  jellyfinEnabled?: boolean;
+  jellyfinUrl?: string;
+  jellyfinApiKey?: string;
 }
 
 export interface LogEntry {
