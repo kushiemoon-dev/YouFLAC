@@ -173,15 +173,32 @@ jobs:
     permissions:
       contents: write
     steps:
+      - name: Checkout (for CHANGELOG)
+        uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
         with:
           pattern: youflac-server-*
           merge-multiple: true
+      - name: Extract release notes from CHANGELOG
+        id: changelog
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          NOTES=$(awk "/^## v${VERSION}[^0-9]/{found=1; next} found && /^## /{exit} found{print}" CHANGELOG.md)
+          if [ -z "$NOTES" ]; then
+            NOTES="See [CHANGELOG.md](CHANGELOG.md) for details."
+          fi
+          {
+            echo "notes<<EOF"
+            echo "$NOTES"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
       - uses: softprops/action-gh-release@v2
         with:
           make_latest: true
           generate_release_notes: true
           body: |
+            ${{ steps.changelog.outputs.notes }}
+
             ## Install
 
             **Docker:**
