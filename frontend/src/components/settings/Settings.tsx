@@ -507,6 +507,37 @@ export function Settings({ pendingNavigate = null, onResolvePending, onRegisterG
             </section>
 
             <section className="mb-8">
+              <SectionTitle title="Media Server" />
+              <div className="space-y-1">
+                <SettingRow label="Jellyfin" description="Trigger a library scan after each completed download">
+                  <Toggle checked={config.jellyfinEnabled ?? false} onChange={(v) => handleChange('jellyfinEnabled', v)} />
+                </SettingRow>
+                {config.jellyfinEnabled && (
+                  <>
+                    <SettingRow label="Server URL" description="e.g. http://localhost:8096">
+                      <input
+                        type="text"
+                        value={config.jellyfinUrl || ''}
+                        onChange={(e) => handleChange('jellyfinUrl', e.target.value)}
+                        placeholder="http://localhost:8096"
+                        style={{ minWidth: 240 }}
+                      />
+                    </SettingRow>
+                    <SettingRow label="API Key" description="Dashboard → API Keys">
+                      <input
+                        type="password"
+                        value={config.jellyfinApiKey || ''}
+                        onChange={(e) => handleChange('jellyfinApiKey', e.target.value)}
+                        autoComplete="off"
+                        style={{ minWidth: 240 }}
+                      />
+                    </SettingRow>
+                  </>
+                )}
+              </div>
+            </section>
+
+            <section className="mb-8">
               <SectionTitle title="Timeouts & Logging" />
               <div className="space-y-1">
                 <SettingRow label="Download Timeout" description="Per-file timeout in minutes (0 = default 10m)">
