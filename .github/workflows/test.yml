@@ -71,3 +71,5 @@ jobs:
         working-directory: frontend
       - run: pnpm exec tsc --noEmit
         working-directory: frontend
+      - run: pnpm test:run
+        working-directory: frontend
