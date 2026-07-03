@@ -7,7 +7,7 @@ import (
 	"os/signal"
 	"syscall"
 
-	core "github.com/kushiemoon-dev/youflac-core"
+	core "github.com/kushiemoon-dev/youflac-core/v4"
 	"youflac/internal/api"
 )
 

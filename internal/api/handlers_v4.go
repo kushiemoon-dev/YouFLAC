@@ -7,7 +7,7 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 
-	core "github.com/kushiemoon-dev/youflac-core"
+	core "github.com/kushiemoon-dev/youflac-core/v4"
 )
 
 // ── Sources ────────────────────────────────────────────────────────────────

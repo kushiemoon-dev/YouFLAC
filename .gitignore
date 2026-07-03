@@ -26,6 +26,11 @@ frontend/wailsjs/
 *.test
 *.out
 
+# youflac-core is a sibling repo at ../YouFLAC-Core, linked via go.work (gitignored)
+# go.mod uses the published version for CI; go.work activates local source for dev
+go.work
+go.work.sum
+
 # IDE
 .idea/
 .vscode/
