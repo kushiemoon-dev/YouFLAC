@@ -8,7 +8,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	core "github.com/kushiemoon-dev/youflac-core"
+	core "github.com/kushiemoon-dev/youflac-core/v4"
 )
 
 func newTestServer(t *testing.T) *Server {

@@ -10,7 +10,7 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/recover"
 	"github.com/gofiber/websocket/v2"
 
-	core "github.com/kushiemoon-dev/youflac-core"
+	core "github.com/kushiemoon-dev/youflac-core/v4"
 )
 
 // Server represents the HTTP API server

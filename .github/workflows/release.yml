@@ -57,11 +57,6 @@ jobs:
         uses: actions/checkout@v4
         with:
           path: youflac
-      - name: Checkout YouFLAC-Core
-        uses: actions/checkout@v4
-        with:
-          repository: kushiemoon-dev/YouFLAC-Core
-          path: YouFLAC-Core
       - uses: actions/setup-go@v5
         with:
           go-version-file: youflac/go.mod
@@ -69,9 +64,6 @@ jobs:
         with:
           name: frontend-dist
           path: youflac/frontend/dist
-      - name: Point replace directive to CI checkout
-        working-directory: youflac
-        run: go mod edit -replace github.com/kushiemoon-dev/youflac-core=../YouFLAC-Core
       - name: Build binary
         working-directory: youflac
         env:
