@@ -5,7 +5,7 @@ go 1.25
 require (
 	github.com/gofiber/fiber/v2 v2.52.13
 	github.com/gofiber/websocket/v2 v2.2.1
-	github.com/kushiemoon-dev/youflac-core v0.0.0-00010101000000-000000000000
+	github.com/kushiemoon-dev/youflac-core/v4 v4.1.1
 )
 
 require (
@@ -35,5 +35,3 @@ require (
 	modernc.org/memory v1.11.0 // indirect
 	modernc.org/sqlite v1.37.1 // indirect
 )
-
-replace github.com/kushiemoon-dev/youflac-core => ../YouFLAC-Core

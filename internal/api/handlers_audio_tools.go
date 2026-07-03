@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/gofiber/fiber/v2"
-	core "github.com/kushiemoon-dev/youflac-core"
+	core "github.com/kushiemoon-dev/youflac-core/v4"
 )
 
 // sandboxPath ensures p is within root (after resolving symlinks).

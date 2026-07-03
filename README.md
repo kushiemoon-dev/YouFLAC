@@ -223,8 +223,6 @@ The Docker image bundles a pre-compiled `sldl` for linux/amd64 and linux/arm64.
 ## Build from Source
 
 ```bash
-# YouFLAC-Core must be cloned as a sibling directory (go.mod uses a local replace)
-git clone https://github.com/kushiemoon-dev/YouFLAC-Core.git
 git clone https://github.com/kushiemoon-dev/YouFLAC.git
 cd YouFLAC
 

@@ -9,7 +9,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	core "github.com/kushiemoon-dev/youflac-core"
+	core "github.com/kushiemoon-dev/youflac-core/v4"
 )
 
 // makePlaylistFixture creates the on-disk shape produced by a real playlist

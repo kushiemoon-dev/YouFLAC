@@ -8,52 +8,21 @@ on:
 
 jobs:
   # lint removed: golangci-lint does not yet support Go 1.25 — use `make lint` locally
-  # Go unit tests live in YouFLAC-Core — this job verifies the module integration compiles
+  # youflac-core is a real pinned module dependency (go.mod) with its own CI/release
+  # process — no sibling checkout needed here.
   build-check:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout YouFLAC
-        uses: actions/checkout@v4
-        with:
-          path: youflac
-      - name: Checkout YouFLAC-Core
-        uses: actions/checkout@v4
-        with:
-          repository: kushiemoon-dev/YouFLAC-Core
-          path: YouFLAC-Core
+      - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
-          go-version-file: youflac/go.mod
-      - name: Point replace directive to CI checkout
-        working-directory: youflac
-        run: go mod edit -replace github.com/kushiemoon-dev/youflac-core=../YouFLAC-Core
+          go-version-file: go.mod
       - name: Build server
-        working-directory: youflac
         run: go build ./cmd/server
-      - name: Create frontend/dist placeholder for embed
-        working-directory: youflac
-        run: mkdir -p frontend/dist
+      - name: Test
+        run: go test ./...
       - name: Vet
-        working-directory: youflac
         run: go vet ./...
-
-  test-go:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout YouFLAC-Core
-        uses: actions/checkout@v4
-        with:
-          repository: kushiemoon-dev/YouFLAC-Core
-          path: YouFLAC-Core
-      - uses: actions/setup-go@v5
-        with:
-          go-version-file: YouFLAC-Core/go.mod
-      - name: Run tests (CGO_ENABLED=0)
-        working-directory: YouFLAC-Core
-        run: CGO_ENABLED=0 go test ./... -short -timeout 60s
-      - name: Vet
-        working-directory: YouFLAC-Core
-        run: CGO_ENABLED=0 go vet ./...
 
   test-frontend:
     runs-on: ubuntu-latest
