@@ -57,6 +57,7 @@ Every FLAC is verified for integrity and quality (sample rate, bit depth, true-l
 - **Queue System** — concurrent downloads with live progress, retry, and WebSocket updates
 - **Playlist** — auto-generates `.m3u8` after batch downloads
 - **NFO + Lyrics** — metadata files for Jellyfin/Plex/Kodi, synced lyrics from LRCLIB
+- **Jellyfin Scan Trigger** — optionally triggers a debounced Jellyfin library scan after each completed download
 - **Docker + Native** — ships as a single binary or Docker image (amd64 / arm64)
 
 ---
@@ -157,6 +158,14 @@ All options can be set via environment variables or through the web UI.
 | `EMBED_COVER_ART` | `true` | Embed cover art in output files |
 | `LYRICS_ENABLED` | `false` | Fetch synced lyrics automatically |
 | `LYRICS_EMBED_MODE` | `lrc` | `lrc`, `embed`, `both` |
+
+### Media Server
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `JELLYFIN_ENABLED` | `false` | Trigger a Jellyfin library scan after each completed download |
+| `JELLYFIN_URL` | _(none)_ | Jellyfin server URL, e.g. `http://localhost:8096` |
+| `JELLYFIN_API_KEY` | _(none)_ | Jellyfin Dashboard → API Keys |
 
 ---
 
