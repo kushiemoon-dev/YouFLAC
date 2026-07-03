@@ -1,6 +1,6 @@
 module youflac
 
-go 1.25
+go 1.25.0
 
 require (
 	github.com/gofiber/fiber/v2 v2.52.13
@@ -26,8 +26,8 @@ require (
 	github.com/wader/goutubedl v0.0.0-20260211162955-2c534af3ada4 // indirect
 	golang.org/x/exp v0.0.0-20250408133849-7e4ce0ab07d0 // indirect
 	golang.org/x/mod v0.32.0 // indirect
-	golang.org/x/net v0.50.0 // indirect
-	golang.org/x/sys v0.41.0 // indirect
+	golang.org/x/net v0.55.0 // indirect
+	golang.org/x/sys v0.45.0 // indirect
 	golang.org/x/tools v0.41.0 // indirect
 	gopkg.in/ini.v1 v1.67.1 // indirect
 	modernc.org/libc v1.65.7 // indirect
