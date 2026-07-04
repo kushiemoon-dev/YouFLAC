@@ -12,8 +12,13 @@ jobs:
   # process — no sibling checkout needed here.
   build-check:
     runs-on: ubuntu-latest
+    env:
+      GOPRIVATE: github.com/kushiemoon-dev/*
+      GONOSUMDB: github.com/kushiemoon-dev/*
     steps:
       - uses: actions/checkout@v4
+      - name: Configure private Go modules
+        run: git config --global url."https://x-access-token:${{ secrets.CORE_ACCESS_TOKEN }}@github.com/".insteadOf "https://github.com/"
       - uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
