@@ -70,3 +70,29 @@ func TestHandleChannelFetchStatus_UnknownID(t *testing.T) {
 		t.Errorf("expected 404, got %d", resp.StatusCode)
 	}
 }
+
+func TestHandleChannelAssets_MissingURL(t *testing.T) {
+	s := newTestServer(t)
+	req := httptest.NewRequest(http.MethodPost, "/api/channel/assets", bytes.NewReader([]byte("{}")))
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := s.app.Test(req, 5000)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if resp.StatusCode != http.StatusBadRequest {
+		t.Errorf("expected 400, got %d", resp.StatusCode)
+	}
+}
+
+func TestHandleChannelAssets_InvalidBody(t *testing.T) {
+	s := newTestServer(t)
+	req := httptest.NewRequest(http.MethodPost, "/api/channel/assets", bytes.NewReader([]byte("not json")))
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := s.app.Test(req, 5000)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if resp.StatusCode != http.StatusBadRequest {
+		t.Errorf("expected 400, got %d", resp.StatusCode)
+	}
+}

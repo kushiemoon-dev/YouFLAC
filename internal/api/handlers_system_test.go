@@ -6,7 +6,107 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	core "github.com/kushiemoon-dev/youflac-core/v4"
 )
+
+func TestHandleHealth_OK(t *testing.T) {
+	s := newTestServer(t)
+	req := httptest.NewRequest(http.MethodGet, "/api/health", nil)
+	resp, err := s.app.Test(req, 5000)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if resp.StatusCode != http.StatusOK {
+		t.Errorf("expected 200, got %d", resp.StatusCode)
+	}
+	var result map[string]string
+	json.NewDecoder(resp.Body).Decode(&result)
+	if result["status"] != "ok" {
+		t.Errorf("status: got %q, want ok", result["status"])
+	}
+	if result["version"] != AppVersion {
+		t.Errorf("version: got %q, want %s", result["version"], AppVersion)
+	}
+}
+
+func TestHandleGetVersion_OK(t *testing.T) {
+	s := newTestServer(t)
+	req := httptest.NewRequest(http.MethodGet, "/api/version", nil)
+	resp, err := s.app.Test(req, 5000)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if resp.StatusCode != http.StatusOK {
+		t.Errorf("expected 200, got %d", resp.StatusCode)
+	}
+	var result map[string]string
+	json.NewDecoder(resp.Body).Decode(&result)
+	if result["version"] != AppVersion {
+		t.Errorf("version: got %q, want %s", result["version"], AppVersion)
+	}
+}
+
+// TestHandleServicesStatus_OK exercises the real handler wiring. CheckServiceStatus
+// probes real external endpoints (tidal.com, qobuz.com, ...) with a 10s timeout each,
+// run in parallel — this may be slow/network-dependent but always returns 200 with a
+// well-formed map regardless of reachability, so the test remains deterministic.
+func TestHandleServicesStatus_OK(t *testing.T) {
+	s := newTestServer(t)
+	req := httptest.NewRequest(http.MethodGet, "/api/services/status", nil)
+	resp, err := s.app.Test(req, 15000)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if resp.StatusCode != http.StatusOK {
+		t.Errorf("expected 200, got %d", resp.StatusCode)
+	}
+	var result map[string]map[string]interface{}
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	for _, svc := range []string{"tidal", "qobuz", "amazon", "deezer", "lucida"} {
+		if _, ok := result[svc]; !ok {
+			t.Errorf("expected %q in response", svc)
+		}
+	}
+}
+
+func TestHandleFFmpegStatus_OK(t *testing.T) {
+	s := newTestServer(t)
+	req := httptest.NewRequest(http.MethodGet, "/api/system/ffmpeg/status", nil)
+	resp, err := s.app.Test(req, 5000)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if resp.StatusCode != http.StatusOK {
+		t.Errorf("expected 200, got %d", resp.StatusCode)
+	}
+	var result map[string]interface{}
+	json.NewDecoder(resp.Body).Decode(&result)
+	if _, ok := result["found"]; !ok {
+		t.Error("expected 'found' key in response")
+	}
+}
+
+func TestHandleGetLogs_ReturnsArray(t *testing.T) {
+	s := newTestServer(t)
+	req := httptest.NewRequest(http.MethodGet, "/api/logs", nil)
+	resp, err := s.app.Test(req, 5000)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if resp.StatusCode != http.StatusOK {
+		t.Errorf("expected 200, got %d", resp.StatusCode)
+	}
+	var entries []core.LogEntry
+	if err := json.NewDecoder(resp.Body).Decode(&entries); err != nil {
+		t.Fatalf("expected a JSON array, decode failed: %v", err)
+	}
+	if entries == nil {
+		t.Error("expected non-nil (possibly empty) array, got null")
+	}
+}
 
 func TestHandleUpdateCheck_NewVersionAvailable(t *testing.T) {
 	// Mock GitHub API returning a newer version

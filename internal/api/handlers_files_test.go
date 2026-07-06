@@ -135,3 +135,67 @@ func TestHandleReorganizeAndFlattenPlaylist_RejectPathTraversal(t *testing.T) {
 		}
 	}
 }
+
+func TestHandleListFiles_ListsFilesWithDetectedTypes(t *testing.T) {
+	dir := t.TempDir()
+	for _, name := range []string{"song.flac", "video.mkv", "notes.txt"} {
+		if err := os.WriteFile(filepath.Join(dir, name), []byte("data"), 0644); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	s := newTestServer(t)
+	req := httptest.NewRequest(http.MethodGet, "/api/files?dir="+dir, nil)
+	resp, err := s.app.Test(req, 5000)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("expected 200, got %d", resp.StatusCode)
+	}
+	var files []FileInfo
+	json.NewDecoder(resp.Body).Decode(&files)
+	if len(files) != 3 {
+		t.Fatalf("expected 3 files, got %d: %+v", len(files), files)
+	}
+	types := map[string]string{}
+	for _, f := range files {
+		types[f.Name] = f.Type
+	}
+	if types["song.flac"] != "audio" || types["video.mkv"] != "video" || types["notes.txt"] != "other" {
+		t.Errorf("unexpected type mapping: %+v", types)
+	}
+}
+
+func TestHandleListFiles_FiltersByExtension(t *testing.T) {
+	dir := t.TempDir()
+	for _, name := range []string{"song.flac", "video.mkv"} {
+		if err := os.WriteFile(filepath.Join(dir, name), []byte("data"), 0644); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	s := newTestServer(t)
+	req := httptest.NewRequest(http.MethodGet, "/api/files?dir="+dir+"&filter=.flac", nil)
+	resp, err := s.app.Test(req, 5000)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var files []FileInfo
+	json.NewDecoder(resp.Body).Decode(&files)
+	if len(files) != 1 || files[0].Name != "song.flac" {
+		t.Fatalf("expected only song.flac, got %+v", files)
+	}
+}
+
+func TestHandleListFiles_NonexistentDir(t *testing.T) {
+	s := newTestServer(t)
+	req := httptest.NewRequest(http.MethodGet, "/api/files?dir=/this/does/not/exist", nil)
+	resp, err := s.app.Test(req, 5000)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if resp.StatusCode != http.StatusInternalServerError {
+		t.Errorf("expected 500, got %d", resp.StatusCode)
+	}
+}
