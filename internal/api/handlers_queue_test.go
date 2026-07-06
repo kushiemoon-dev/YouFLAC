@@ -152,19 +152,18 @@ func TestHandleGetItemLogs_ReturnsBuffered(t *testing.T) {
 	}
 }
 
-// TestHandleRemoveFromQueue_UnknownID_StillReturns200 characterizes the current
-// (perhaps surprising) behavior: core.Queue.RemoveFromQueue never returns an
-// error, even for an ID that isn't in the queue, so the handler's 404 branch
-// is currently unreachable and removing an unknown ID succeeds silently.
-func TestHandleRemoveFromQueue_UnknownID_StillReturns200(t *testing.T) {
+// TestHandleRemoveFromQueue_UnknownID_Returns404 verifies that removing an
+// unknown ID returns 404 (core.Queue.RemoveFromQueue now returns an error
+// for unknown IDs instead of silently succeeding).
+func TestHandleRemoveFromQueue_UnknownID_Returns404(t *testing.T) {
 	s := newTestServer(t)
 	req := httptest.NewRequest(http.MethodDelete, "/api/queue/nonexistent", nil)
 	resp, err := s.app.Test(req, 5000)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if resp.StatusCode != http.StatusOK {
-		t.Errorf("expected 200, got %d", resp.StatusCode)
+	if resp.StatusCode != http.StatusNotFound {
+		t.Errorf("expected 404, got %d", resp.StatusCode)
 	}
 }
 

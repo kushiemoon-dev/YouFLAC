@@ -93,19 +93,18 @@ func TestHandleSearchHistory_WithQuery(t *testing.T) {
 	}
 }
 
-// TestHandleDeleteHistoryEntry_UnknownID_StillReturns200 characterizes the
-// current behavior: core.History.Delete never returns an error, even for an
-// ID that isn't in history, so the handler's 404 branch is currently
-// unreachable (same pattern as RemoveFromQueue).
-func TestHandleDeleteHistoryEntry_UnknownID_StillReturns200(t *testing.T) {
+// TestHandleDeleteHistoryEntry_UnknownID_Returns404 verifies that deleting an
+// unknown ID returns 404 (core.History.Delete now returns an error for
+// unknown IDs instead of silently succeeding, same fix as RemoveFromQueue).
+func TestHandleDeleteHistoryEntry_UnknownID_Returns404(t *testing.T) {
 	s := newHistoryTestServer(t)
 	req := httptest.NewRequest(http.MethodDelete, "/api/history/nonexistent", nil)
 	resp, err := s.app.Test(req, 5000)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if resp.StatusCode != http.StatusOK {
-		t.Errorf("expected 200, got %d", resp.StatusCode)
+	if resp.StatusCode != http.StatusNotFound {
+		t.Errorf("expected 404, got %d", resp.StatusCode)
 	}
 }
 
