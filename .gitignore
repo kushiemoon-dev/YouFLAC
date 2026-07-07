@@ -63,3 +63,6 @@ Thumbs.db
 
 # Planning/session files (local only)
 docs/plans/
+
+# Agent scratch
+.playwright-mcp/
