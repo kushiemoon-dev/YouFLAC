@@ -5,6 +5,7 @@
 ### YouTube Video + Lossless FLAC = Perfect MKV
 
 [![GitHub Release](https://img.shields.io/github/v/release/kushiemoon-dev/YouFLAC?style=flat-square&color=e91e8c)](https://github.com/kushiemoon-dev/YouFLAC/releases/latest)
+[![Stars](https://img.shields.io/github/stars/kushiemoon-dev/YouFLAC?style=flat-square&color=a855f7)](https://github.com/kushiemoon-dev/YouFLAC/stargazers)
 [![ghcr.io](https://img.shields.io/badge/ghcr.io-youflac-2496ED?style=flat-square&logo=docker&logoColor=white)](https://github.com/kushiemoon-dev/YouFLAC/pkgs/container/youflac)
 [![License](https://img.shields.io/github/license/kushiemoon-dev/YouFLAC?style=flat-square&color=gray)](LICENSE)
 [![Go](https://img.shields.io/badge/Go-1.25-00ADD8?style=flat-square&logo=go&logoColor=white)](https://go.dev)
@@ -257,6 +258,16 @@ Requires Go 1.25+, Node.js 22+, pnpm 11+.
 - [Fiber](https://gofiber.io) — HTTP framework
 - [Deezer API](https://developers.deezer.com) — ISRC enrichment during downloads
 - [LRCLIB](https://lrclib.net) — Synced lyrics
+
+---
+
+## Star History
+
+<div align="center">
+
+[![Star History](docs/star-history.svg)](https://github.com/kushiemoon-dev/YouFLAC/stargazers)
+
+</div>
 
 ---
 
