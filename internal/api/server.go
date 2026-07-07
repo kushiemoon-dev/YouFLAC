@@ -34,7 +34,7 @@ func NewServer(config *core.Config, queue *core.Queue, history *core.History, fi
 		AppName:        "YouFlac Server",
 		ServerHeader:   "YouFlac",
 		BodyLimit:      50 * 1024 * 1024, // 50MB
-		ReadBufferSize: 16 * 1024,        // 16KB pour gérer les gros headers (cookies)
+		ReadBufferSize: 16 * 1024,        // 16KB to handle large headers (cookies)
 	})
 
 	// Create WebSocket hub
