@@ -1,6 +1,3 @@
-import { useCallback, useEffect, useState } from 'react';
-import * as Api from '../lib/api';
-
 export type SoundType = 'complete' | 'error' | 'queueEmpty';
 
 // Singleton for sound effects
@@ -87,32 +84,4 @@ export function playSound(type: SoundType) {
 // Update global sound enabled state
 export function setSoundEnabled(enabled: boolean) {
   globalSoundEnabled = enabled;
-}
-
-// Hook for components that need to manage sound effects
-export function useSoundEffects() {
-  const [enabled, setEnabled] = useState(true);
-
-  // Load config on mount
-  useEffect(() => {
-    Api.GetConfig()
-      .then((config) => {
-        const isEnabled = config.soundEffectsEnabled ?? true;
-        setEnabled(isEnabled);
-        globalSoundEnabled = isEnabled;
-      })
-      .catch(console.error);
-  }, []);
-
-  // Update global state when local state changes
-  const updateEnabled = useCallback((value: boolean) => {
-    setEnabled(value);
-    globalSoundEnabled = value;
-  }, []);
-
-  return {
-    enabled,
-    setEnabled: updateEnabled,
-    playSound,
-  };
 }

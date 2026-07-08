@@ -188,29 +188,6 @@ export interface AudioAnalysis {
   maxFreq?: number;
 }
 
-export interface LyricsResult {
-  plainText: string;
-  syncedLyrics?: string;
-  source: string;
-  hasSync: boolean;
-  trackName?: string;
-  artistName?: string;
-  albumName?: string;
-  duration?: number;
-}
-
-export interface MatchResult {
-  video?: VideoInfo;
-  audio?: AudioCandidate;
-  confidence: number;
-  matchMethod: string;
-  durationDiff: number;
-  titleScore: number;
-  artistScore: number;
-  isValid: boolean;
-  warnings?: string[];
-}
-
 export interface AudioCandidate {
   platform: string;
   url: string;
@@ -230,13 +207,6 @@ export interface FileInfo {
   size: number;
   extension: string;
   type: string;  // 'video' | 'audio' | 'cover' | 'nfo' | 'other'
-}
-
-export interface ParseURLResult {
-  type: string; // 'video' | 'playlist' | 'channel' | 'invalid'
-  videoId?: string;
-  playlistId?: string;
-  url: string;
 }
 
 export interface ReorganizePlaylistResult {
@@ -288,10 +258,6 @@ export async function AddToQueue(request: DownloadRequest): Promise<string> {
     body: JSON.stringify(request),
   });
   return res.id;
-}
-
-export async function GetQueueItem(id: string): Promise<QueueItem> {
-  return api<QueueItem>(`/queue/${id}`);
 }
 
 export async function RemoveFromQueue(id: string): Promise<void> {
@@ -350,24 +316,12 @@ export async function ResumeAll(): Promise<number> {
   return res.resumed;
 }
 
-export async function PauseQueueItem(id: string): Promise<void> {
-  await api<void>(`/queue/${id}/pause`, { method: 'POST' });
-}
-
-export async function ResumeQueueItem(id: string): Promise<void> {
-  await api<void>(`/queue/${id}/resume`, { method: 'POST' });
-}
-
 export async function FetchLogs(sinceId: number): Promise<LogEntry[]> {
   return api<LogEntry[]>(`/logs?since=${sinceId}`);
 }
 
 export async function GetItemLogs(id: string): Promise<LogEntry[]> {
   return api<LogEntry[]>(`/queue/${encodeURIComponent(id)}/logs`);
-}
-
-export async function SaveQueue(): Promise<void> {
-  // No-op for HTTP API - queue is auto-saved
 }
 
 // ============== Playlist API ==============
@@ -455,10 +409,6 @@ export async function ConvertAudio(req: ConvertRequest): Promise<ConvertResult> 
   });
 }
 
-export async function GetConvertFormats(): Promise<string[]> {
-  return api<string[]>('/convert/formats');
-}
-
 export interface ConvertDirOptions {
   dir: string;
   targetFormat: string;
@@ -493,22 +443,8 @@ export async function SearchYouTube(query: string, limit?: number): Promise<Vide
 
 // ============== Video/URL API ==============
 
-export async function ParseURL(url: string): Promise<ParseURLResult> {
-  return api<ParseURLResult>('/video/parse', {
-    method: 'POST',
-    body: JSON.stringify({ url }),
-  });
-}
-
 export async function GetVideoInfo(url: string): Promise<VideoInfo> {
   return api<VideoInfo>(`/video/info?url=${encodeURIComponent(url)}`);
-}
-
-export async function FindAudioMatch(videoInfo: VideoInfo): Promise<MatchResult> {
-  return api<MatchResult>('/video/match', {
-    method: 'POST',
-    body: JSON.stringify(videoInfo),
-  });
 }
 
 // ============== Files API ==============
@@ -554,59 +490,6 @@ export async function GenerateSpectrogram(filePath: string): Promise<string> {
   return res.path;
 }
 
-export async function GenerateWaveform(filePath: string): Promise<string> {
-  const res = await api<{ path: string }>('/analyze/waveform', {
-    method: 'POST',
-    body: JSON.stringify({ filePath }),
-  });
-  return res.path;
-}
-
-// ============== Lyrics API ==============
-
-export async function FetchLyrics(artist: string, title: string): Promise<LyricsResult> {
-  return api<LyricsResult>(`/lyrics?artist=${encodeURIComponent(artist)}&title=${encodeURIComponent(title)}`);
-}
-
-export async function FetchLyricsWithAlbum(artist: string, title: string, album: string): Promise<LyricsResult> {
-  return api<LyricsResult>(`/lyrics?artist=${encodeURIComponent(artist)}&title=${encodeURIComponent(title)}&album=${encodeURIComponent(album)}`);
-}
-
-export async function EmbedLyrics(mediaPath: string, lyrics: LyricsResult): Promise<void> {
-  await api<void>('/lyrics/embed', {
-    method: 'POST',
-    body: JSON.stringify({ mediaPath, lyrics }),
-  });
-}
-
-export async function SaveLRCFile(mediaPath: string, lyrics: LyricsResult): Promise<string> {
-  const res = await api<{ path: string }>('/lyrics/save', {
-    method: 'POST',
-    body: JSON.stringify({ mediaPath, lyrics }),
-  });
-  return res.path;
-}
-
-export async function HasLyrics(mediaPath: string): Promise<boolean> {
-  // For HTTP API, this would need a separate endpoint - simplified for now
-  return false;
-}
-
-export async function ExtractLyrics(mediaPath: string): Promise<LyricsResult> {
-  // Would need a separate endpoint
-  throw new Error('Not implemented in HTTP API');
-}
-
-export async function FetchAndEmbedLyrics(mediaPath: string, artist: string, title: string, mode: string): Promise<void> {
-  const lyrics = await FetchLyrics(artist, title);
-  if (mode === 'embed' || mode === 'both') {
-    await EmbedLyrics(mediaPath, lyrics);
-  }
-  if (mode === 'lrc' || mode === 'both') {
-    await SaveLRCFile(mediaPath, lyrics);
-  }
-}
-
 // ============== Resampler API ==============
 export interface ResampleOptions {
   inputPath: string;
@@ -639,30 +522,6 @@ export async function GetImageAsDataURL(path: string): Promise<string> {
 export async function GetAppVersion(): Promise<string> {
   const res = await api<{ version: string }>('/version');
   return res.version;
-}
-
-// ============== Desktop-specific stubs ==============
-// These functions are no-ops or simplified for HTTP mode
-
-export async function BrowseDirectory(): Promise<string> {
-  // In browser, we can't open native file dialogs
-  // Return empty - UI should show a text input instead
-  return '';
-}
-
-export async function OpenDirectory(path: string): Promise<void> {
-  // Can't open file manager from browser
-  console.log('OpenDirectory not available in browser mode:', path);
-}
-
-export async function OpenFile(path: string): Promise<void> {
-  // Can't open files directly from browser
-  console.log('OpenFile not available in browser mode:', path);
-}
-
-// Wails runtime compatibility - these are no-ops in HTTP mode
-export function BrowserOpenURL(url: string): void {
-  window.open(url, '_blank');
 }
 
 // ============== System API ==============

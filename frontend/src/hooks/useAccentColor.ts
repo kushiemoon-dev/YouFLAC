@@ -1,4 +1,3 @@
-import { useEffect } from 'react';
 import { AccentColor } from '../types';
 
 // Accent color presets with all variations
@@ -67,13 +66,4 @@ export function applyAccentColor(color: AccentColor) {
   root.style.setProperty('--color-accent-hover', preset.hover);
   root.style.setProperty('--color-accent-subtle', preset.subtle);
   root.style.setProperty('--color-accent-glow', preset.glow);
-}
-
-// Hook to apply and manage accent color
-export function useAccentColor(color: AccentColor | undefined) {
-  useEffect(() => {
-    if (color) {
-      applyAccentColor(color);
-    }
-  }, [color]);
 }
