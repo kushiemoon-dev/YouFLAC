@@ -6,6 +6,8 @@ import (
 	"strings"
 
 	core "github.com/kushiemoon-dev/youflac-core/v4"
+	"github.com/kushiemoon-dev/youflac-core/v4/songlink"
+	"github.com/kushiemoon-dev/youflac-core/v4/validate"
 )
 
 // ============== Queue Methods ==============
@@ -35,7 +37,7 @@ func (a *App) GetQueue() []core.QueueItem {
 func (a *App) AddToQueue(req core.DownloadRequest) (string, error) {
 	// If VideoURL is a music service URL, route it to SpotifyURL
 	if req.SpotifyURL == "" && req.VideoURL != "" {
-		if core.IsQobuzURL(req.VideoURL) || core.IsTidalURL(req.VideoURL) || core.IsSpotifyURL(req.VideoURL) {
+		if core.IsQobuzURL(req.VideoURL) || core.IsTidalURL(req.VideoURL) || songlink.IsSpotifyURL(req.VideoURL) {
 			req.SpotifyURL = req.VideoURL
 			req.VideoURL = ""
 		}
@@ -43,7 +45,7 @@ func (a *App) AddToQueue(req core.DownloadRequest) (string, error) {
 
 	// Only validate as YouTube URL if VideoURL is still set
 	if req.VideoURL != "" {
-		if err := core.ValidateYouTubeURL(req.VideoURL); err != nil {
+		if err := validate.ValidateYouTubeURL(req.VideoURL); err != nil {
 			return "", fmt.Errorf("invalid video URL: %w", err)
 		}
 	}
@@ -151,7 +153,7 @@ func (a *App) AddPlaylistToQueue(url string, quality string, maxVideos int) (*Ad
 		}
 		playlist, err = core.GetChannelVideos(url, mv)
 	} else {
-		if err := core.ValidateYouTubeURL(url); err != nil {
+		if err := validate.ValidateYouTubeURL(url); err != nil {
 			return nil, fmt.Errorf("invalid playlist URL: %w", err)
 		}
 		playlist, err = core.GetPlaylistVideos(url)

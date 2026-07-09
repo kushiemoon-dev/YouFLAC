@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	core "github.com/kushiemoon-dev/youflac-core/v4"
+	"github.com/kushiemoon-dev/youflac-core/v4/channeljobs"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
@@ -150,7 +151,7 @@ func (a *App) ChannelFetchCancel(id string) error {
 	return nil
 }
 
-func (a *App) ChannelFetchStatus(id string) (*core.ChannelJob, error) {
+func (a *App) ChannelFetchStatus(id string) (*channeljobs.ChannelJob, error) {
 	job, ok := a.registry.GetJobStatus(id)
 	if !ok {
 		return nil, fmt.Errorf("job not found")

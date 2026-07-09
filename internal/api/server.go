@@ -11,6 +11,7 @@ import (
 	"github.com/gofiber/websocket/v2"
 
 	core "github.com/kushiemoon-dev/youflac-core/v4"
+	"github.com/kushiemoon-dev/youflac-core/v4/channeljobs"
 )
 
 // Server represents the HTTP API server
@@ -21,7 +22,7 @@ type Server struct {
 	history   *core.History
 	fileIndex *core.FileIndex
 	wsHub     *WebSocketHub
-	registry  *core.ChannelJobRegistry
+	registry  *channeljobs.ChannelJobRegistry
 
 	// v4 engine (optional — nil when not initialized)
 	sourceMgr    *core.SourceManager
@@ -48,7 +49,7 @@ func NewServer(config *core.Config, queue *core.Queue, history *core.History, fi
 		history:   history,
 		fileIndex: fileIndex,
 		wsHub:     wsHub,
-		registry:  core.NewChannelJobRegistry(),
+		registry:  channeljobs.NewChannelJobRegistry(),
 	}
 
 	// Middleware

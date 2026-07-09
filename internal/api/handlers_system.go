@@ -12,6 +12,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 
 	core "github.com/kushiemoon-dev/youflac-core/v4"
+	"github.com/kushiemoon-dev/youflac-core/v4/system"
 )
 
 const AppVersion = "4.3.0"
@@ -57,7 +58,7 @@ func (s *Server) handleFFmpegInstall(c *fiber.Ctx) error {
 }
 
 func (s *Server) handleOpenConfigFolder(c *fiber.Ctx) error {
-	if err := core.OpenConfigFolder(); err != nil {
+	if err := system.OpenConfigFolder(); err != nil {
 		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
 	}
 	return c.JSON(fiber.Map{"success": true})

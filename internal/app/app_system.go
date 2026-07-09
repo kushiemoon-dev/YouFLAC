@@ -12,6 +12,7 @@ import (
 	"time"
 
 	core "github.com/kushiemoon-dev/youflac-core/v4"
+	"github.com/kushiemoon-dev/youflac-core/v4/system"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
@@ -65,7 +66,7 @@ func (a *App) FFmpegInstall() error {
 }
 
 func (a *App) OpenConfigFolder() error {
-	return core.OpenConfigFolder()
+	return system.OpenConfigFolder()
 }
 
 func (a *App) GetLogs(since int64) []core.LogEntry {
