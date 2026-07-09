@@ -61,7 +61,7 @@ export function DebugLogsModal({ itemId, onClose }: DebugLogsModalProps) {
         {/* Header */}
         <div
           className="flex items-center justify-between px-5 py-4"
-          style={{ borderBottom: '1px solid var(--color-border)', flexShrink: 0 }}
+          style={{ borderBottom: '1px solid var(--color-border-default)', flexShrink: 0 }}
         >
           <h3 className="font-semibold" style={{ color: 'var(--color-text-primary)' }}>
             Debug logs
@@ -80,7 +80,7 @@ export function DebugLogsModal({ itemId, onClose }: DebugLogsModalProps) {
                 style={{
                   background: 'var(--color-bg-tertiary)',
                   color: 'var(--color-text-primary)',
-                  border: '1px solid var(--color-border)',
+                  border: '1px solid var(--color-border-default)',
                 }}
               >
                 <option value="all">All</option>

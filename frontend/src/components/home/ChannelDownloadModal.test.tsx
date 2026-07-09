@@ -1,13 +1,19 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { ChannelDownloadModal } from './ChannelDownloadModal'
+import * as Api from '../../lib/api'
 
-// Mock fetch
-const mockFetch = vi.fn()
-globalThis.fetch = mockFetch
+vi.mock('../../lib/api', () => ({
+  ChannelFetch: vi.fn(),
+  ChannelFetchCancel: vi.fn(),
+}))
+
+vi.mock('../../lib/websocket', () => ({
+  EventsOn: vi.fn(() => () => {}),
+}))
 
 beforeEach(() => {
-  mockFetch.mockReset()
+  vi.clearAllMocks()
 })
 
 describe('ChannelDownloadModal', () => {
@@ -29,17 +35,13 @@ describe('ChannelDownloadModal', () => {
     expect(screen.queryByText(/Download Discography/i)).not.toBeInTheDocument()
   })
 
-  it('posts to /api/channel/fetch on Fetch click', async () => {
-    mockFetch.mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({ jobID: 'abc123' }),
-    })
+  it('calls ChannelFetch on Fetch click', async () => {
+    vi.mocked(Api.ChannelFetch).mockResolvedValueOnce('abc123')
     render(<ChannelDownloadModal {...baseProps} />)
     fireEvent.click(screen.getByRole('button', { name: /Fetch/i }))
     await waitFor(() => {
-      expect(mockFetch).toHaveBeenCalledWith(
-        '/api/channel/fetch',
-        expect.objectContaining({ method: 'POST' })
+      expect(Api.ChannelFetch).toHaveBeenCalledWith(
+        baseProps.url, false, false, '', 0
       )
     })
   })

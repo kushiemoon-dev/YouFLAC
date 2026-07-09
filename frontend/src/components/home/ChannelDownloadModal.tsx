@@ -52,7 +52,7 @@ export function ChannelDownloadModal({ url, open, onClose, onTracksResolved }: P
               value={maxItems}
               onChange={e => setMaxItems(Number(e.target.value))}
               className="w-20 px-2 py-1 rounded text-sm"
-              style={{ border: '1px solid var(--color-border)', background: 'var(--color-bg-secondary)' }}
+              style={{ border: '1px solid var(--color-border-default)', background: 'var(--color-bg-secondary)' }}
             />
             <span style={{ color: 'var(--color-text-secondary)' }}>(0 = unlimited)</span>
           </label>

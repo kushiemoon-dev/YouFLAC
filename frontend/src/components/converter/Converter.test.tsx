@@ -9,18 +9,12 @@ vi.mock('../../lib/api', () => ({
   GetAppVersion: vi.fn().mockResolvedValue('0.0.0'),
 }))
 
-// Mock WebSocket
-class MockWebSocket {
-  onmessage: ((e: MessageEvent) => void) | null = null
-  onerror: ((e: Event) => void) | null = null
-  onopen: (() => void) | null = null
-  close = vi.fn()
-  constructor(public url: string) {}
-}
+vi.mock('../../lib/websocket', () => ({
+  EventsOn: vi.fn(() => () => {}),
+}))
 
 beforeEach(() => {
   vi.clearAllMocks()
-  globalThis.WebSocket = MockWebSocket as unknown as typeof WebSocket
 })
 
 describe('Converter', () => {
@@ -49,7 +43,7 @@ describe('Converter', () => {
   })
 
   it('calls ConvertDirectory with dir and format in folder mode', async () => {
-    vi.mocked(Api.ConvertDirectory).mockResolvedValueOnce({ success: true, message: 'started' })
+    vi.mocked(Api.ConvertDirectory).mockResolvedValueOnce({ sourcePath: '/music/albums', done: true })
     render(<Converter />)
     fireEvent.click(screen.getByRole('button', { name: 'Folder' }))
     fireEvent.change(screen.getByPlaceholderText('/path/to/music/folder'), {

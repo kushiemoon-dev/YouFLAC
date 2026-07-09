@@ -47,8 +47,7 @@ func (s *Server) handleChannelFetch(c *fiber.Ctx) error {
 		PlaylistID:    body.PlaylistID,
 		MaxItems:      body.MaxItems,
 	}
-	var jobID string
-	jobID = s.registry.StartJob(body.URL, opts, func(jid string, v core.VideoInfoLite, n int) {
+	jobID := s.registry.StartJob(body.URL, opts, func(jid string, v core.VideoInfoLite, n int) {
 		s.wsHub.Broadcast(map[string]interface{}{
 			"type":  "channel_fetch_progress",
 			"jobID": jid,
@@ -56,10 +55,10 @@ func (s *Server) handleChannelFetch(c *fiber.Ctx) error {
 			"total": -1,
 			"item":  v,
 		})
-	}, func(total, errs int) {
+	}, func(jid string, total, errs int) {
 		s.wsHub.Broadcast(map[string]interface{}{
 			"type":         "channel_fetch_done",
-			"jobID":        jobID,
+			"jobID":        jid,
 			"totalFetched": total,
 			"errorCount":   errs,
 		})
