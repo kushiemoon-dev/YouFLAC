@@ -6,6 +6,7 @@ import (
 	"os"
 
 	core "github.com/kushiemoon-dev/youflac-core/v4"
+	"github.com/kushiemoon-dev/youflac-core/v4/channeljobs"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
@@ -22,7 +23,7 @@ type App struct {
 
 	sourceMgr    *core.SourceManager
 	orchestrator *core.DownloadOrchestrator
-	registry     *core.ChannelJobRegistry
+	registry     *channeljobs.ChannelJobRegistry
 }
 
 func NewApp() *App {
@@ -83,7 +84,7 @@ func (a *App) Startup(ctx context.Context) {
 	a.queue.SetHistory(a.history)
 	a.config = config
 
-	a.registry = core.NewChannelJobRegistry()
+	a.registry = channeljobs.NewChannelJobRegistry()
 
 	// Real-time queue updates -> frontend, via Wails events instead of a
 	// WebSocket broadcast (see lib/websocket.ts on the frontend side).

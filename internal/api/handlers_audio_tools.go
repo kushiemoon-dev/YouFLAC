@@ -10,6 +10,7 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	core "github.com/kushiemoon-dev/youflac-core/v4"
+	"github.com/kushiemoon-dev/youflac-core/v4/resampler"
 )
 
 // sandboxPath ensures p is within root (after resolving symlinks).
@@ -111,7 +112,7 @@ func (s *Server) handleVideoPreview(c *fiber.Ctx) error {
 }
 
 func (s *Server) handleResample(c *fiber.Ctx) error {
-	var opts core.ResampleOptions
+	var opts resampler.ResampleOptions
 	if err := c.BodyParser(&opts); err != nil {
 		return c.Status(400).JSON(fiber.Map{"error": "invalid request body"})
 	}
@@ -139,7 +140,7 @@ func (s *Server) handleResample(c *fiber.Ctx) error {
 	inputRate := info.SampleRate
 
 	start := time.Now()
-	if err := core.Resample(c.Context(), opts); err != nil {
+	if err := resampler.Resample(c.Context(), opts); err != nil {
 		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
 	}
 	return c.JSON(fiber.Map{

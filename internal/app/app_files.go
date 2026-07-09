@@ -13,6 +13,7 @@ import (
 	"time"
 
 	core "github.com/kushiemoon-dev/youflac-core/v4"
+	"github.com/kushiemoon-dev/youflac-core/v4/resampler"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
@@ -360,7 +361,7 @@ type ResampleResult struct {
 
 // Resample resamples a single audio file per opts, sandboxed to the
 // configured/default output directory.
-func (a *App) Resample(opts core.ResampleOptions) (ResampleResult, error) {
+func (a *App) Resample(opts resampler.ResampleOptions) (ResampleResult, error) {
 	if opts.InputPath == "" || opts.OutputPath == "" {
 		return ResampleResult{}, fmt.Errorf("inputPath and outputPath required")
 	}
@@ -385,7 +386,7 @@ func (a *App) Resample(opts core.ResampleOptions) (ResampleResult, error) {
 	inputRate := info.SampleRate
 
 	start := time.Now()
-	if err := core.Resample(a.ctx, opts); err != nil {
+	if err := resampler.Resample(a.ctx, opts); err != nil {
 		return ResampleResult{}, err
 	}
 

@@ -4,6 +4,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 
 	core "github.com/kushiemoon-dev/youflac-core/v4"
+	"github.com/kushiemoon-dev/youflac-core/v4/validate"
 )
 
 // ============== Config Handlers ==============
@@ -22,12 +23,12 @@ func (s *Server) handleSaveConfig(c *fiber.Ctx) error {
 		return c.Status(400).JSON(fiber.Map{"error": "Invalid request body"})
 	}
 
-	if err := core.ValidateOutputDirectory(config.OutputDirectory); err != nil {
+	if err := validate.ValidateOutputDirectory(config.OutputDirectory); err != nil {
 		return c.Status(400).JSON(fiber.Map{"error": "Invalid output directory: " + err.Error()})
 	}
 
 	if len(config.AudioSourcePriority) > 0 {
-		if err := core.ValidateAudioSources(config.AudioSourcePriority); err != nil {
+		if err := validate.ValidateAudioSources(config.AudioSourcePriority); err != nil {
 			return c.Status(400).JSON(fiber.Map{"error": "Invalid audio source priority: " + err.Error()})
 		}
 	}

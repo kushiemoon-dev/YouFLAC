@@ -7,6 +7,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 
 	core "github.com/kushiemoon-dev/youflac-core/v4"
+	"github.com/kushiemoon-dev/youflac-core/v4/validate"
 )
 
 // ============== Playlist Handlers ==============
@@ -37,7 +38,7 @@ func (s *Server) handleAddPlaylistToQueue(c *fiber.Ctx) error {
 		}
 		playlist, err = core.GetChannelVideos(body.URL, maxVideos)
 	} else {
-		if err := core.ValidateYouTubeURL(body.URL); err != nil {
+		if err := validate.ValidateYouTubeURL(body.URL); err != nil {
 			return c.Status(400).JSON(fiber.Map{"error": "Invalid playlist URL: " + err.Error()})
 		}
 		playlist, err = core.GetPlaylistVideos(body.URL)
