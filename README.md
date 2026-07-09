@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="banner.png" alt="YouFLAC" width="600">
+<img src="docs/banner.png" alt="YouFLAC" width="600">
 
 ### YouTube Video + Lossless FLAC = Perfect MKV
 
@@ -35,11 +35,11 @@ Every FLAC is verified for integrity and quality (sample rate, bit depth, true-l
 
 | Home — paste any YouTube URL | Download Queue |
 |------------------------------|----------------|
-| ![Home](youflac-home.png) | ![Queue](youflac-queue-done.png) |
+| ![Home](docs/screenshots/home.png) | ![Queue](docs/screenshots/queue-done.png) |
 
 | Source Priority (drag-and-drop) | Soulseek Setup |
 |--------------------------------|----------------|
-| ![Sources](youflac-sources-tab.png) | ![Soulseek](youflac-soulseek-success.png) |
+| ![Sources](docs/screenshots/sources-tab.png) | ![Soulseek](docs/screenshots/soulseek-success.png) |
 
 </div>
 

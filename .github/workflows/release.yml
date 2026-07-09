@@ -139,7 +139,7 @@ jobs:
       - name: Build
         env:
           CGO_ENABLED: '0'
-        run: wails build -platform windows/amd64 -trimpath -ldflags "-s -w -X main.appVersion=${{ github.ref_name }}"
+        run: wails build -platform windows/amd64 -trimpath -ldflags "-s -w -X youflac/internal/app.appVersion=${{ github.ref_name }}"
 
       - uses: actions/upload-artifact@v4
         with:
@@ -183,7 +183,7 @@ jobs:
       - name: Build
         env:
           CGO_ENABLED: '1'
-        run: wails build -platform darwin/universal -trimpath -ldflags "-s -w -X main.appVersion=${{ github.ref_name }}"
+        run: wails build -platform darwin/universal -trimpath -ldflags "-s -w -X youflac/internal/app.appVersion=${{ github.ref_name }}"
 
       - name: Create DMG
         run: |
@@ -259,7 +259,7 @@ jobs:
       - name: Build
         env:
           CGO_ENABLED: '1'
-        run: wails build -trimpath -ldflags "-s -w -X main.appVersion=${{ github.ref_name }}"
+        run: wails build -trimpath -ldflags "-s -w -X youflac/internal/app.appVersion=${{ github.ref_name }}"
 
       - name: Compress with UPX
         run: upx --best build/bin/youflac

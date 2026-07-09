@@ -3,6 +3,8 @@ package main
 import (
 	"embed"
 
+	"youflac/internal/app"
+
 	"github.com/wailsapp/wails/v2"
 	"github.com/wailsapp/wails/v2/pkg/options"
 	"github.com/wailsapp/wails/v2/pkg/options/assetserver"
@@ -12,7 +14,7 @@ import (
 var assets embed.FS
 
 func main() {
-	app := NewApp()
+	youflacApp := app.NewApp()
 
 	err := wails.Run(&options.App{
 		Title:  "YouFLAC",
@@ -20,13 +22,13 @@ func main() {
 		Height: 800,
 		AssetServer: &assetserver.Options{
 			Assets:  assets,
-			Handler: app.previewAssetHandler(),
+			Handler: youflacApp.PreviewAssetHandler(),
 		},
 		BackgroundColour: &options.RGBA{R: 15, G: 20, B: 25, A: 1},
-		OnStartup:        app.startup,
-		OnShutdown:       app.shutdown,
+		OnStartup:        youflacApp.Startup,
+		OnShutdown:       youflacApp.Shutdown,
 		Bind: []interface{}{
-			app,
+			youflacApp,
 		},
 	})
 

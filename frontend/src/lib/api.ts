@@ -6,7 +6,7 @@
  * import from here need to change.
  */
 
-import * as App from '../../wailsjs/go/main/App';
+import * as App from '../../wailsjs/go/app/App';
 
 // Types (matching backend models)
 export interface Config {
