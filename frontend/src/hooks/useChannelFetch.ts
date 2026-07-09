@@ -1,4 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from 'react'
+import * as Api from '../lib/api'
+import { EventsOn } from '../lib/websocket'
 
 export interface VideoInfoLite {
   id: string
@@ -23,12 +25,12 @@ export function useChannelFetch() {
   const [items, setItems] = useState<VideoInfoLite[]>([])
   const [count, setCount] = useState(0)
   const jobIDRef = useRef<string | null>(null)
-  const wsRef = useRef<WebSocket | null>(null)
+  const unsubRef = useRef<(() => void) | null>(null)
 
   const cleanup = useCallback(() => {
-    if (wsRef.current) {
-      wsRef.current.close()
-      wsRef.current = null
+    if (unsubRef.current) {
+      unsubRef.current()
+      unsubRef.current = null
     }
   }, [])
 
@@ -40,41 +42,40 @@ export function useChannelFetch() {
     setCount(0)
     setStatus('running')
 
-    const resp = await fetch('/api/channel/fetch', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ url, ...opts }),
-    })
-    if (!resp.ok) {
+    let jobID: string
+    try {
+      jobID = await Api.ChannelFetch(
+        url,
+        opts.includeShorts ?? false,
+        opts.onlyLongForm ?? false,
+        opts.playlistID ?? '',
+        opts.maxItems ?? 0
+      )
+    } catch {
       setStatus('error')
       return
     }
-    const { jobID } = await resp.json()
     jobIDRef.current = jobID
 
-    const ws = new WebSocket(`${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/ws`)
-    wsRef.current = ws
-
-    ws.onmessage = (e) => {
-      try {
-        const msg = JSON.parse(e.data)
-        if (msg.jobID !== jobID) return
-        if (msg.type === 'channel_fetch_progress') {
-          setCount(msg.count)
-          if (msg.item) setItems(prev => [...prev, msg.item])
-        } else if (msg.type === 'channel_fetch_done') {
-          setStatus('done')
-          cleanup()
-        }
-      } catch {}
+    const unsubProgress = EventsOn('channel_fetch_progress', (msg: any) => {
+      if (msg.jobID !== jobID) return
+      setCount(msg.count)
+      if (msg.item) setItems(prev => [...prev, msg.item])
+    })
+    const unsubDone = EventsOn('channel_fetch_done', (msg: any) => {
+      if (msg.jobID !== jobID) return
+      setStatus('done')
+      cleanup()
+    })
+    unsubRef.current = () => {
+      unsubProgress()
+      unsubDone()
     }
-
-    ws.onerror = () => setStatus('error')
   }, [cleanup])
 
   const cancel = useCallback(async () => {
     if (!jobIDRef.current) return
-    await fetch(`/api/channel/fetch/${jobIDRef.current}/cancel`, { method: 'POST' })
+    await Api.ChannelFetchCancel(jobIDRef.current)
     setStatus('cancelled')
     cleanup()
   }, [cleanup])

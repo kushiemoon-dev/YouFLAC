@@ -26,6 +26,17 @@ export function Resampler() {
     }
   }
 
+  const browseInput = async () => {
+    const path = await Api.SelectAudioFile()
+    if (path) setOpts((o: ResampleOptions) => ({ ...o, inputPath: path }))
+  }
+
+  const browseOutput = async () => {
+    const base = opts.inputPath.split('/').pop()?.replace(/\.[^.]+$/, '') || 'output'
+    const path = await Api.SelectSaveAudioFile(`${base}.${opts.format}`)
+    if (path) setOpts((o: ResampleOptions) => ({ ...o, outputPath: path }))
+  }
+
   return (
     <div className="min-h-screen">
       <div className="px-4 md:px-8 py-8 max-w-2xl">
@@ -33,32 +44,38 @@ export function Resampler() {
         <div className="card p-6 space-y-4">
           <div>
             <label className="block text-sm mb-1" style={{ color: 'var(--color-text-secondary)' }}>Input file path</label>
-            <input className="w-full px-3 py-2 rounded text-sm" style={{ border: '1px solid var(--color-border)', background: 'var(--color-bg-secondary)', color: 'var(--color-text-primary)' }}
-              value={opts.inputPath} onChange={e => setOpts((o: ResampleOptions) => ({ ...o, inputPath: e.target.value }))} placeholder="/path/to/input.wav" />
+            <div className="flex gap-2">
+              <input className="w-full px-3 py-2 rounded text-sm" style={{ border: '1px solid var(--color-border-default)', background: 'var(--color-bg-secondary)', color: 'var(--color-text-primary)' }}
+                value={opts.inputPath} onChange={e => setOpts((o: ResampleOptions) => ({ ...o, inputPath: e.target.value }))} placeholder="/path/to/input.wav" />
+              <button type="button" className="btn btn-secondary" onClick={browseInput}>Browse…</button>
+            </div>
           </div>
           <div>
             <label className="block text-sm mb-1" style={{ color: 'var(--color-text-secondary)' }}>Output file path</label>
-            <input className="w-full px-3 py-2 rounded text-sm" style={{ border: '1px solid var(--color-border)', background: 'var(--color-bg-secondary)', color: 'var(--color-text-primary)' }}
-              value={opts.outputPath} onChange={e => setOpts((o: ResampleOptions) => ({ ...o, outputPath: e.target.value }))} placeholder="/path/to/output.flac" />
+            <div className="flex gap-2">
+              <input className="w-full px-3 py-2 rounded text-sm" style={{ border: '1px solid var(--color-border-default)', background: 'var(--color-bg-secondary)', color: 'var(--color-text-primary)' }}
+                value={opts.outputPath} onChange={e => setOpts((o: ResampleOptions) => ({ ...o, outputPath: e.target.value }))} placeholder="/path/to/output.flac" />
+              <button type="button" className="btn btn-secondary" onClick={browseOutput}>Browse…</button>
+            </div>
           </div>
           <div className="flex gap-4">
             <div className="flex-1">
               <label className="block text-sm mb-1" style={{ color: 'var(--color-text-secondary)' }}>Sample rate</label>
-              <select className="w-full px-3 py-2 rounded text-sm" style={{ border: '1px solid var(--color-border)', background: 'var(--color-bg-secondary)', color: 'var(--color-text-primary)' }}
+              <select className="w-full px-3 py-2 rounded text-sm" style={{ border: '1px solid var(--color-border-default)', background: 'var(--color-bg-secondary)', color: 'var(--color-text-primary)' }}
                 value={opts.sampleRate} onChange={e => setOpts((o: ResampleOptions) => ({ ...o, sampleRate: Number(e.target.value) }))}>
                 {SAMPLE_RATES.map(r => <option key={r} value={r}>{(r / 1000).toFixed(1)} kHz</option>)}
               </select>
             </div>
             <div className="flex-1">
               <label className="block text-sm mb-1" style={{ color: 'var(--color-text-secondary)' }}>Bit depth</label>
-              <select className="w-full px-3 py-2 rounded text-sm" style={{ border: '1px solid var(--color-border)', background: 'var(--color-bg-secondary)', color: 'var(--color-text-primary)' }}
+              <select className="w-full px-3 py-2 rounded text-sm" style={{ border: '1px solid var(--color-border-default)', background: 'var(--color-bg-secondary)', color: 'var(--color-text-primary)' }}
                 value={opts.bitDepth} onChange={e => setOpts((o: ResampleOptions) => ({ ...o, bitDepth: Number(e.target.value) }))}>
                 {BIT_DEPTHS.map(d => <option key={d} value={d}>{d}-bit</option>)}
               </select>
             </div>
             <div className="flex-1">
               <label className="block text-sm mb-1" style={{ color: 'var(--color-text-secondary)' }}>Format</label>
-              <select className="w-full px-3 py-2 rounded text-sm" style={{ border: '1px solid var(--color-border)', background: 'var(--color-bg-secondary)', color: 'var(--color-text-primary)' }}
+              <select className="w-full px-3 py-2 rounded text-sm" style={{ border: '1px solid var(--color-border-default)', background: 'var(--color-bg-secondary)', color: 'var(--color-text-primary)' }}
                 value={opts.format} onChange={e => setOpts((o: ResampleOptions) => ({ ...o, format: e.target.value as 'flac' | 'wav' | 'alac' }))}>
                 {FORMATS.map(f => <option key={f} value={f}>{f.toUpperCase()}</option>)}
               </select>

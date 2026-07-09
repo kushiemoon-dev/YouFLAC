@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Header } from '../layout/Header';
 import { Dropdown } from '../ui/Dropdown';
 import * as Api from '../../lib/api';
+import { EventsOn } from '../../lib/websocket';
 
 const formatOptions = [
   { value: 'mp3', label: 'MP3', description: 'Lossy, universally compatible' },
@@ -45,14 +46,15 @@ export function Converter() {
   const [dirError, setDirError] = useState('');
   const [dirProgress, setDirProgress] = useState<Api.DirConvertResult[]>([]);
   const [dirDone, setDirDone] = useState(false);
-  const wsRef = useRef<WebSocket | null>(null);
+  const [dirFinalResult, setDirFinalResult] = useState<Api.DirConvertResult | null>(null);
+  const unsubRef = useRef<(() => void) | null>(null);
 
-  // Close WS on unmount
+  // Unsubscribe from progress events on unmount
   useEffect(() => {
     return () => {
-      if (wsRef.current) {
-        wsRef.current.close();
-        wsRef.current = null;
+      if (unsubRef.current) {
+        unsubRef.current();
+        unsubRef.current = null;
       }
     };
   }, []);
@@ -90,59 +92,43 @@ export function Converter() {
     setDirError('');
     setDirProgress([]);
     setDirDone(false);
+    setDirFinalResult(null);
 
-    // Open WS for progress events
-    const proto = location.protocol === 'https:' ? 'wss' : 'ws';
-    const ws = new WebSocket(`${proto}://${location.host}/ws`);
-    wsRef.current = ws;
-
-    ws.onmessage = (e) => {
-      try {
-        const msg = JSON.parse(e.data);
-        if (msg.type === 'convert_progress') {
-          const data: Api.DirConvertResult = msg.data;
-          setDirProgress((prev) => [...prev, data]);
-          if (data.done) {
-            setDirDone(true);
-            setDirConverting(false);
-            ws.close();
-            wsRef.current = null;
-          }
-        }
-      } catch {
-        // ignore parse errors
-      }
-    };
-
-    ws.onerror = () => {
-      setDirError('WebSocket error while waiting for progress');
-      setDirConverting(false);
-      wsRef.current = null;
-    };
-
-    // Guard against server-side disconnects that never send done:true.
-    ws.onclose = () => {
-      if (!dirDone) {
-        setDirConverting(false);
-      }
-      wsRef.current = null;
-    };
+    // Subscribe to per-file progress events before kicking off the job.
+    const unsub = EventsOn('convert_progress', (data: Api.DirConvertResult) => {
+      setDirProgress((prev) => [...prev, data]);
+    });
+    unsubRef.current = unsub;
 
     try {
       const opts: Api.ConvertDirOptions = {
         dir: dirPath.trim(),
         targetFormat: dirFormat,
       };
-      await Api.ConvertDirectory(opts);
+      const result = await Api.ConvertDirectory(opts);
+      setDirFinalResult(result);
+      setDirDone(true);
+      setDirConverting(false);
     } catch (err) {
       setDirError(err instanceof Error ? err.message : 'Conversion failed');
       setDirConverting(false);
-      ws.close();
-      wsRef.current = null;
+    } finally {
+      unsub();
+      unsubRef.current = null;
     }
   };
 
-  const finalResult = dirDone && dirProgress.length > 0 ? dirProgress[dirProgress.length - 1] : null;
+  const browseSourceFile = async () => {
+    const path = await Api.SelectAudioFile();
+    if (path) setSourcePath(path);
+  };
+
+  const browseSourceDirectory = async () => {
+    const path = await Api.SelectDirectory();
+    if (path) setDirPath(path);
+  };
+
+  const finalResult = dirDone ? dirFinalResult : null;
 
   return (
     <div className="min-h-screen">
@@ -174,13 +160,16 @@ export function Converter() {
               <label className="block text-sm font-medium mb-2" style={{ color: 'var(--color-text-primary)' }}>
                 Source File
               </label>
-              <input
-                type="text"
-                value={sourcePath}
-                onChange={(e) => setSourcePath(e.target.value)}
-                placeholder="/path/to/audio.flac"
-                className="w-full"
-              />
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={sourcePath}
+                  onChange={(e) => setSourcePath(e.target.value)}
+                  placeholder="/path/to/audio.flac"
+                  className="w-full"
+                />
+                <button type="button" className="btn-secondary" onClick={browseSourceFile}>Browse…</button>
+              </div>
               <p className="text-xs mt-1" style={{ color: 'var(--color-text-tertiary)' }}>
                 Full path to the audio file to convert
               </p>
@@ -258,13 +247,16 @@ export function Converter() {
               <label className="block text-sm font-medium mb-2" style={{ color: 'var(--color-text-primary)' }}>
                 Source Directory
               </label>
-              <input
-                type="text"
-                value={dirPath}
-                onChange={(e) => setDirPath(e.target.value)}
-                placeholder="/path/to/music/folder"
-                className="w-full"
-              />
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={dirPath}
+                  onChange={(e) => setDirPath(e.target.value)}
+                  placeholder="/path/to/music/folder"
+                  className="w-full"
+                />
+                <button type="button" className="btn-secondary" onClick={browseSourceDirectory}>Browse…</button>
+              </div>
               <p className="text-xs mt-1" style={{ color: 'var(--color-text-tertiary)' }}>
                 Full path to the folder containing audio files
               </p>

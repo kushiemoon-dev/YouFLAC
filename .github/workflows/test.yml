@@ -22,8 +22,21 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
+      - uses: pnpm/action-setup@v4
+        with:
+          version: '11.1.1'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'pnpm'
+          cache-dependency-path: frontend/pnpm-lock.yaml
+      - name: Build frontend
+        working-directory: frontend
+        run: pnpm install --frozen-lockfile && pnpm build
       - name: Build server
         run: go build ./cmd/server
+      - name: Build desktop entrypoint
+        run: go build .
       - name: Test
         run: go test ./...
       - name: Vet
@@ -31,8 +44,16 @@ jobs:
 
   test-frontend:
     runs-on: ubuntu-latest
+    env:
+      GOPRIVATE: github.com/kushiemoon-dev/*
+      GONOSUMDB: github.com/kushiemoon-dev/*
     steps:
       - uses: actions/checkout@v4
+      - name: Configure private Go modules
+        run: git config --global url."https://x-access-token:${{ secrets.CORE_ACCESS_TOKEN }}@github.com/".insteadOf "https://github.com/"
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
       - uses: pnpm/action-setup@v4
         with:
           version: '11.1.1'
@@ -43,6 +64,10 @@ jobs:
           cache-dependency-path: frontend/pnpm-lock.yaml
       - run: pnpm install --frozen-lockfile
         working-directory: frontend
+      - name: Install Wails CLI
+        run: go install github.com/wailsapp/wails/v2/cmd/wails@latest
+      - name: Generate Wails bindings
+        run: wails generate module
       - run: pnpm exec tsc --noEmit
         working-directory: frontend
       - run: pnpm test:run

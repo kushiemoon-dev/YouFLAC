@@ -1,6 +1,12 @@
 /**
- * HTTP API Client - Replaces Wails bindings for Docker/standalone mode
+ * Wails bindings client. Every exported function/type here keeps its exact
+ * pre-existing name and signature (this file used to be an HTTP client
+ * calling a local Fiber server) — only the internal implementation changed,
+ * from fetch() to generated Wails Go bindings, so none of the ~40 files that
+ * import from here need to change.
  */
+
+import * as App from '../../wailsjs/go/main/App';
 
 // Types (matching backend models)
 export interface Config {
@@ -35,9 +41,6 @@ export interface Config {
   uiFont: string;
   soulseekUsername?: string;
   soulseekPassword?: string;
-  jellyfinEnabled?: boolean;
-  jellyfinUrl?: string;
-  jellyfinApiKey?: string;
 }
 
 export interface LogEntry {
@@ -222,169 +225,125 @@ export interface FlattenPlaylistResult {
   errors?: string[];
 }
 
-// API Base URL - empty for same-origin (production), can be set for dev
-const API_BASE = import.meta.env.VITE_API_URL || '';
-
-// Generic fetch helper
-async function api<T>(path: string, options?: RequestInit): Promise<T> {
-  const res = await fetch(`${API_BASE}/api${path}`, {
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    ...options,
-  });
-
-  if (!res.ok) {
-    const errorText = await res.text();
-    throw new Error(errorText || `HTTP ${res.status}`);
-  }
-
-  // Handle empty responses
-  const text = await res.text();
-  if (!text) return {} as T;
-
-  return JSON.parse(text);
-}
-
 // ============== Queue API ==============
 
 export async function GetQueue(): Promise<QueueItem[]> {
-  return api<QueueItem[]>('/queue');
+  return App.GetQueue() as unknown as Promise<QueueItem[]>;
 }
 
 export async function AddToQueue(request: DownloadRequest): Promise<string> {
-  const res = await api<{ id: string }>('/queue', {
-    method: 'POST',
-    body: JSON.stringify(request),
-  });
-  return res.id;
+  return App.AddToQueue(request as any);
 }
 
 export async function RemoveFromQueue(id: string): Promise<void> {
-  await api<void>(`/queue/${id}`, { method: 'DELETE' });
+  await App.RemoveFromQueue(id);
 }
 
 export async function CancelQueueItem(id: string): Promise<void> {
-  await api<void>(`/queue/${id}/cancel`, { method: 'POST' });
+  await App.CancelQueueItem(id);
 }
 
 export async function MoveQueueItem(id: string, newPosition: number): Promise<void> {
-  await api<void>(`/queue/${id}/move`, {
-    method: 'PUT',
-    body: JSON.stringify({ newPosition }),
-  });
+  await App.MoveQueueItem(id, newPosition);
 }
 
 export async function GetQueueStats(): Promise<QueueStats> {
-  return api<QueueStats>('/queue/stats');
+  return App.GetQueueStats() as unknown as Promise<QueueStats>;
 }
 
 export async function ClearCompleted(): Promise<number> {
-  const res = await api<{ cleared: number }>('/queue/clear', { method: 'POST' });
-  return res.cleared;
+  return App.ClearCompleted();
 }
 
 export async function RetryFailed(): Promise<number> {
-  const res = await api<{ retried: number }>('/queue/retry', { method: 'POST' });
-  return res.retried;
+  return App.RetryFailed();
 }
 
 export async function retryWithOverride(id: string, req: RetryOverrideRequest): Promise<QueueItem> {
-  return api<QueueItem>(`/queue/${id}/retry-override`, {
-    method: 'POST',
-    body: JSON.stringify(req),
-  });
+  return App.RetryQueueItemWithOverride(id, req as any) as unknown as Promise<QueueItem>;
 }
 
 export async function RetryQueueItemWithSource(id: string, forceSource: string): Promise<void> {
-  const body: Record<string, string> = {};
+  const body: RetryOverrideRequest = {};
   if (forceSource && forceSource !== 'auto') body.forceSource = forceSource;
-  await api(`/queue/${id}/retry-override`, { method: 'POST', body: JSON.stringify(body) });
+  await App.RetryQueueItemWithOverride(id, body as any);
 }
 
 export async function ClearQueue(): Promise<void> {
-  await api<void>('/queue/clear', { method: 'POST' });
+  // Same server-side action as ClearCompleted — only one Go method exists.
+  await App.ClearCompleted();
 }
 
 export async function PauseAll(): Promise<number> {
-  const res = await api<{ paused: number }>('/queue/pause-all', { method: 'POST' });
-  return res.paused;
+  return App.PauseAll();
 }
 
 export async function ResumeAll(): Promise<number> {
-  const res = await api<{ resumed: number }>('/queue/resume-all', { method: 'POST' });
-  return res.resumed;
+  return App.ResumeAll();
 }
 
 export async function FetchLogs(sinceId: number): Promise<LogEntry[]> {
-  return api<LogEntry[]>(`/logs?since=${sinceId}`);
+  return App.GetLogs(sinceId) as unknown as Promise<LogEntry[]>;
 }
 
 export async function GetItemLogs(id: string): Promise<LogEntry[]> {
-  return api<LogEntry[]>(`/queue/${encodeURIComponent(id)}/logs`);
+  return App.GetItemLogs(id) as unknown as Promise<LogEntry[]>;
 }
 
 // ============== Playlist API ==============
 
 export async function AddPlaylistToQueue(url: string, quality?: string): Promise<string[]> {
-  const res = await api<{ ids: string[]; playlistTitle: string }>('/playlist', {
-    method: 'POST',
-    body: JSON.stringify({ url, quality }),
-  });
+  // maxVideos: 0 = unlimited, matching the backend's default when unset.
+  const res = await App.AddPlaylistToQueue(url, quality ?? '', 0);
   return res.ids;
 }
 
 // ============== Config API ==============
 
 export async function GetConfig(): Promise<Config> {
-  return api<Config>('/config');
+  return App.GetConfig() as unknown as Promise<Config>;
 }
 
 export async function SaveConfig(config: Config): Promise<void> {
-  await api<void>('/config', {
-    method: 'POST',
-    body: JSON.stringify(config),
-  });
+  await App.SaveConfig(config as any);
 }
 
 export async function GetDefaultOutputDirectory(): Promise<string> {
-  const res = await api<{ path: string }>('/config/default-output');
-  return res.path;
+  return App.GetDefaultOutputDirectory();
 }
 
 // ============== History API ==============
 
 export async function GetHistory(): Promise<HistoryEntry[]> {
-  return api<HistoryEntry[]>('/history');
+  return App.GetHistory() as unknown as Promise<HistoryEntry[]>;
 }
 
 export async function GetHistoryStats(): Promise<HistoryStats> {
-  return api<HistoryStats>('/history/stats');
+  return App.GetHistoryStats() as unknown as Promise<HistoryStats>;
 }
 
 export async function SearchHistory(query: string): Promise<HistoryEntry[]> {
-  return api<HistoryEntry[]>(`/history/search?q=${encodeURIComponent(query)}`);
+  return App.SearchHistory(query, '', '') as unknown as Promise<HistoryEntry[]>;
 }
 
 export async function DeleteHistoryEntry(id: string): Promise<void> {
-  await api<void>(`/history/${id}`, { method: 'DELETE' });
+  await App.DeleteHistoryEntry(id);
 }
 
 export async function ClearHistory(): Promise<void> {
-  await api<void>('/history/clear', { method: 'POST' });
+  await App.ClearHistory();
 }
 
 export async function RedownloadFromHistory(id: string): Promise<string> {
-  const res = await api<{ id: string }>(`/history/${id}/redownload`, { method: 'POST' });
-  return res.id;
+  return App.RedownloadFromHistory(id);
 }
 
 export async function FilterHistoryBySource(source: string): Promise<HistoryEntry[]> {
-  return api<HistoryEntry[]>(`/history/search?source=${encodeURIComponent(source)}`);
+  return App.SearchHistory('', source, '') as unknown as Promise<HistoryEntry[]>;
 }
 
 export async function FilterHistoryByStatus(status: string): Promise<HistoryEntry[]> {
-  return api<HistoryEntry[]>(`/history/search?status=${encodeURIComponent(status)}`);
+  return App.SearchHistory('', '', status) as unknown as Promise<HistoryEntry[]>;
 }
 
 // ============== Converter API ==============
@@ -403,10 +362,7 @@ export interface ConvertResult {
 }
 
 export async function ConvertAudio(req: ConvertRequest): Promise<ConvertResult> {
-  return api<ConvertResult>('/convert', {
-    method: 'POST',
-    body: JSON.stringify(req),
-  });
+  return App.Convert(req as any) as unknown as Promise<ConvertResult>;
 }
 
 export interface ConvertDirOptions {
@@ -426,68 +382,72 @@ export interface DirConvertResult {
   failed?: number;
 }
 
-export async function ConvertDirectory(opts: ConvertDirOptions): Promise<{ success: boolean; message: string }> {
-  return api<{ success: boolean; message: string }>('/converter/directory', {
-    method: 'POST',
-    body: JSON.stringify(opts),
-  });
+export async function ConvertDirectory(opts: ConvertDirOptions): Promise<DirConvertResult> {
+  // The Wails binding returns the real final result (same shape as the
+  // convert_progress event payload); the old HTTP endpoint only returned a
+  // generic {success, message} ack, so callers reading the richer fields
+  // below are new, not a behavior change for existing callers.
+  return App.ConvertDirectory(opts as any) as unknown as Promise<DirConvertResult>;
 }
 
 // ============== Search API ==============
 
 export async function SearchYouTube(query: string, limit?: number): Promise<VideoInfo[]> {
-  let url = `/search?q=${encodeURIComponent(query)}`;
-  if (limit) url += `&limit=${limit}`;
-  return api<VideoInfo[]>(url);
+  return App.Search(query, limit ?? 0) as unknown as Promise<VideoInfo[]>;
 }
 
 // ============== Video/URL API ==============
 
 export async function GetVideoInfo(url: string): Promise<VideoInfo> {
-  return api<VideoInfo>(`/video/info?url=${encodeURIComponent(url)}`);
+  return App.GetVideoInfo(url) as unknown as Promise<VideoInfo>;
+}
+
+// ============== Channel API ==============
+
+export async function ChannelFetch(
+  url: string,
+  includeShorts: boolean,
+  onlyLongForm: boolean,
+  playlistID: string,
+  maxItems: number
+): Promise<string> {
+  return App.ChannelFetch(url, includeShorts, onlyLongForm, playlistID, maxItems);
+}
+
+export async function ChannelFetchCancel(jobID: string): Promise<void> {
+  await App.ChannelFetchCancel(jobID);
 }
 
 // ============== Files API ==============
 
 export async function ListFiles(dir: string, filter?: string): Promise<FileInfo[]> {
-  let url = `/files?dir=${encodeURIComponent(dir)}`;
-  if (filter) url += `&filter=${encodeURIComponent(filter)}`;
-  return api<FileInfo[]>(url);
+  return App.ListFiles(dir, filter ?? '') as unknown as Promise<FileInfo[]>;
 }
 
 export async function GetPlaylistFolders(): Promise<string[]> {
-  return api<string[]>('/files/playlists');
+  return App.GetPlaylistFolders();
 }
 
 export async function ReorganizePlaylist(folderPath: string): Promise<ReorganizePlaylistResult> {
-  return api<ReorganizePlaylistResult>('/files/reorganize', {
-    method: 'POST',
-    body: JSON.stringify({ folderPath }),
-  });
+  return App.ReorganizePlaylist(folderPath) as unknown as Promise<ReorganizePlaylistResult>;
 }
 
 export async function FlattenPlaylistFolder(folderPath: string): Promise<FlattenPlaylistResult> {
-  return api<FlattenPlaylistResult>('/files/flatten', {
-    method: 'POST',
-    body: JSON.stringify({ folderPath }),
-  });
+  return App.FlattenPlaylist(folderPath) as unknown as Promise<FlattenPlaylistResult>;
 }
 
 // ============== Analyzer API ==============
 
 export async function AnalyzeAudio(filePath: string): Promise<AudioAnalysis> {
-  return api<AudioAnalysis>('/analyze', {
-    method: 'POST',
-    body: JSON.stringify({ filePath }),
-  });
+  return App.AnalyzeAudio(filePath) as unknown as Promise<AudioAnalysis>;
 }
 
 export async function GenerateSpectrogram(filePath: string): Promise<string> {
-  const res = await api<{ path: string }>('/analyze/spectrogram', {
-    method: 'POST',
-    body: JSON.stringify({ filePath }),
-  });
-  return res.path;
+  // Returns a data: URL directly now (image already inlined server-side),
+  // where the old HTTP path returned a temp file path that a second
+  // GetImageAsDataURL() call had to resolve. Existing callers that fed this
+  // straight into an <img src> keep working unchanged either way.
+  return App.GenerateSpectrogram(filePath);
 }
 
 // ============== Resampler API ==============
@@ -507,27 +467,42 @@ export interface ResampleResult {
   durationMs: number;
 }
 export async function Resample(opts: ResampleOptions): Promise<ResampleResult> {
-  return api<ResampleResult>('/resampler', { method: 'POST', body: JSON.stringify(opts) });
+  return App.Resample(opts as any) as unknown as Promise<ResampleResult>;
 }
 
 // ============== Image API ==============
 
 export async function GetImageAsDataURL(path: string): Promise<string> {
-  const res = await api<{ dataUrl: string }>(`/image?path=${encodeURIComponent(path)}`);
-  return res.dataUrl;
+  return App.GetImage(path);
 }
 
 // ============== Misc API ==============
 
 export async function GetAppVersion(): Promise<string> {
-  const res = await api<{ version: string }>('/version');
+  const res: any = await App.GetVersion();
   return res.version;
 }
 
 // ============== System API ==============
 
 export async function OpenConfigFolder(): Promise<void> {
-  await api<void>('/system/open-config-folder', { method: 'POST' });
+  await App.OpenConfigFolder();
+}
+
+// ============== Dialogs API ==============
+// Native OS file/folder pickers, for use instead of hand-typed paths.
+// Return '' when the user cancels.
+
+export async function SelectAudioFile(): Promise<string> {
+  return App.SelectAudioFile();
+}
+
+export async function SelectDirectory(): Promise<string> {
+  return App.SelectDirectory();
+}
+
+export async function SelectSaveAudioFile(defaultFilename: string): Promise<string> {
+  return App.SelectSaveAudioFile(defaultFilename);
 }
 
 export interface UpdateCheckResult {
@@ -538,17 +513,17 @@ export interface UpdateCheckResult {
 }
 
 export async function CheckForUpdates(): Promise<UpdateCheckResult> {
-  const res = await fetch('/api/system/update-check');
-  if (!res.ok) throw new Error('update check failed');
-  return res.json();
+  return App.UpdateCheck() as unknown as Promise<UpdateCheckResult>;
 }
 
 // ============== Preview API ==============
 
 // Returns the URL for streaming a short audio preview (OGG/Vorbis).
-// Use directly as <audio src> — no fetch needed.
+// Use directly as <audio src> — no fetch needed. Served by the Wails
+// AssetServer's custom handler (see app_files.go's previewAssetHandler),
+// not the old /api/video/preview HTTP route.
 export function GetPreviewURL(videoURL: string, seconds = 30): string {
-  return `/api/video/preview?url=${encodeURIComponent(videoURL)}&seconds=${seconds}`;
+  return `/preview?url=${encodeURIComponent(videoURL)}&seconds=${seconds}`;
 }
 
 // ============== Sources API ==============
@@ -560,14 +535,11 @@ export interface SourceInfo {
 }
 
 export async function GetSources(): Promise<SourceInfo[]> {
-  return api<SourceInfo[]>('/sources');
+  return App.GetSources() as unknown as Promise<SourceInfo[]>;
 }
 
 export async function SetSourcePriority(names: string[]): Promise<void> {
-  await api<void>('/sources/priority', {
-    method: 'PUT',
-    body: JSON.stringify({ priority: names }),
-  });
+  await App.SetSourcePriority(names);
 }
 
 // ============== Soulseek API ==============
@@ -588,14 +560,13 @@ export interface SoulseekLoginTestResult {
 }
 
 export async function GetSoulseekStatus(): Promise<SoulseekStatus> {
-  return api<SoulseekStatus>('/soulseek/status');
+  const res: any = await App.GetSoulseekStatus();
+  return res;
 }
 
 export async function TestSoulseekLogin(username: string, password: string): Promise<SoulseekLoginTestResult> {
-  return api<SoulseekLoginTestResult>('/soulseek/login-test', {
-    method: 'POST',
-    body: JSON.stringify({ username, password }),
-  });
+  const res: any = await App.SoulseekLoginTest(username, password);
+  return res;
 }
 
 // ============== Qobuz Providers API ==============
@@ -606,13 +577,10 @@ export interface QobuzProvidersConfig {
 }
 
 export async function GetQobuzProviders(): Promise<QobuzProvidersConfig> {
-  return api<QobuzProvidersConfig>('/qobuz/providers');
+  const res: any = await App.GetQobuzProviders();
+  return res;
 }
 
 export async function SetQobuzProviders(disabled: string[]): Promise<void> {
-  await api<void>('/qobuz/providers', {
-    method: 'PUT',
-    body: JSON.stringify({ disabled }),
-  });
+  await App.SetQobuzProviders(disabled);
 }
-

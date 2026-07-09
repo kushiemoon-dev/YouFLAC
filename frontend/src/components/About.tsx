@@ -229,7 +229,7 @@ export function About() {
           </h3>
           <div className="space-y-2">
             {FAQ_ITEMS.map((item) => (
-              <div key={item.id} style={{ borderBottom: '1px solid var(--color-border)' }}>
+              <div key={item.id} style={{ borderBottom: '1px solid var(--color-border-default)' }}>
                 <button
                   className="w-full flex items-center justify-between py-3 text-left"
                   onClick={() => toggleFaq(item.id)}

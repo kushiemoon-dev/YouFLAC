@@ -23,6 +23,7 @@ func main() {
 
 	// Initialise structured logger (LOG_LEVEL env var overrides config)
 	core.InitLogger(config.LogLevel)
+	core.SetCookiesBrowser(config.CookiesBrowser)
 
 	// Ensure output directory exists
 	outputDir := config.OutputDirectory

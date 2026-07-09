@@ -6,14 +6,12 @@
 
 [![GitHub Release](https://img.shields.io/github/v/release/kushiemoon-dev/YouFLAC?style=flat-square&color=e91e8c)](https://github.com/kushiemoon-dev/YouFLAC/releases/latest)
 [![Stars](https://img.shields.io/github/stars/kushiemoon-dev/YouFLAC?style=flat-square&color=a855f7)](https://github.com/kushiemoon-dev/YouFLAC/stargazers)
-[![ghcr.io](https://img.shields.io/badge/ghcr.io-youflac-2496ED?style=flat-square&logo=docker&logoColor=white)](https://github.com/kushiemoon-dev/YouFLAC/pkgs/container/youflac)
 [![License](https://img.shields.io/github/license/kushiemoon-dev/YouFLAC?style=flat-square&color=gray)](LICENSE)
 [![Go](https://img.shields.io/badge/Go-1.25-00ADD8?style=flat-square&logo=go&logoColor=white)](https://go.dev)
 
 ![Linux](https://img.shields.io/badge/Linux-any-FCC624?style=flat-square&logo=linux&logoColor=black)
 ![macOS](https://img.shields.io/badge/macOS-Apple_Silicon-000000?style=flat-square&logo=apple&logoColor=white)
 ![Windows](https://img.shields.io/badge/Windows-10+-0078D6?style=flat-square&logo=windows&logoColor=white)
-![Docker](https://img.shields.io/badge/Docker-supported-2496ED?style=flat-square&logo=docker&logoColor=white)
 
 </div>
 
@@ -58,38 +56,24 @@ Every FLAC is verified for integrity and quality (sample rate, bit depth, true-l
 - **Queue System** — concurrent downloads with live progress, retry, and WebSocket updates
 - **Playlist** — auto-generates `.m3u8` after batch downloads
 - **NFO + Lyrics** — metadata files for Jellyfin/Plex/Kodi, synced lyrics from LRCLIB
-- **Jellyfin Scan Trigger** — optionally triggers a debounced Jellyfin library scan after each completed download
-- **Docker + Native** — ships as a single binary or Docker image (amd64 / arm64)
 
 ---
 
 ## Install
 
-### Docker Compose (recommended)
+### Desktop App
 
-```bash
-git clone https://github.com/kushiemoon-dev/YouFLAC.git
-cd YouFLAC
-cp .env.example .env   # fill in your credentials
-docker compose up -d
-```
+**[⬇ Download Latest Release](https://github.com/kushiemoon-dev/YouFLAC/releases/latest)**
 
-Access the UI at **http://localhost:8080**
+| Platform | File |
+|----------|------|
+| Windows x64 | `youflac.exe` |
+| macOS Universal | `youflac.dmg` |
+| Linux x64 | `youflac.AppImage` |
 
-### Docker Run
+### Headless / Self-hosted (advanced)
 
-```bash
-docker run -d \
-  --name youflac \
-  -p 8080:8080 \
-  -v ./config:/config \
-  -v ./downloads:/downloads \
-  -e SOULSEEK_USERNAME=you \
-  -e SOULSEEK_PASSWORD=secret \
-  ghcr.io/kushiemoon-dev/youflac:latest
-```
-
-### Native Binary
+For running YouFLAC on a home server, NAS, or headless box without a desktop environment.
 
 **[⬇ Download Latest Release](https://github.com/kushiemoon-dev/YouFLAC/releases/latest)**
 
@@ -108,6 +92,21 @@ cd youflac-server-linux-amd64
 
 > **Note:** Native binaries require **FFmpeg**, **ffprobe**, and **yt-dlp** in PATH.  
 > Soulseek requires [slsk-batchdl](https://github.com/fiso64/slsk-batchdl) v2.6+ (`sldl` binary).
+
+### API
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `GET` | `/api/health` | Health check |
+| `GET` | `/api/version` | Current version |
+| `GET` | `/api/queue` | List queue items |
+| `POST` | `/api/queue` | Add item (URL or metadata) |
+| `POST` | `/api/queue/:id/pause` | Pause an item |
+| `POST` | `/api/queue/:id/resume` | Resume an item |
+| `POST` | `/api/queue/retry-failed` | Retry all failed items |
+| `GET` | `/api/sources` | List registered sources and status |
+| `POST` | `/api/soulseek/login-test` | Test Soulseek credentials |
+| `GET` | `/api/services/status` | Source service health |
 
 ---
 
@@ -154,19 +153,11 @@ All options can be set via environment variables or through the web UI.
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `OUTPUT_DIR` | `~/MusicVideos` | Download output directory (Docker: `/downloads`) |
+| `OUTPUT_DIR` | `~/MusicVideos` | Download output directory |
 | `GENERATE_NFO` | `true` | Generate NFO metadata files |
 | `EMBED_COVER_ART` | `true` | Embed cover art in output files |
 | `LYRICS_ENABLED` | `false` | Fetch synced lyrics automatically |
 | `LYRICS_EMBED_MODE` | `lrc` | `lrc`, `embed`, `both` |
-
-### Media Server
-
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `JELLYFIN_ENABLED` | `false` | Trigger a Jellyfin library scan after each completed download |
-| `JELLYFIN_URL` | _(none)_ | Jellyfin server URL, e.g. `http://localhost:8096` |
-| `JELLYFIN_API_KEY` | _(none)_ | Jellyfin Dashboard → API Keys |
 
 ---
 
@@ -209,25 +200,6 @@ yt-dlp (video)         Source Orchestrator (FLAC)
 2. Set `SOULSEEK_USERNAME` and `SOULSEEK_PASSWORD` (env vars or Settings UI)
 3. Use the **Test Login** button in Settings → Sources to verify connectivity before downloading
 
-The Docker image bundles a pre-compiled `sldl` for linux/amd64 and linux/arm64.
-
----
-
-## API
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `GET` | `/api/health` | Health check |
-| `GET` | `/api/version` | Current version |
-| `GET` | `/api/queue` | List queue items |
-| `POST` | `/api/queue` | Add item (URL or metadata) |
-| `POST` | `/api/queue/:id/pause` | Pause an item |
-| `POST` | `/api/queue/:id/resume` | Resume an item |
-| `POST` | `/api/queue/retry-failed` | Retry all failed items |
-| `GET` | `/api/sources` | List registered sources and status |
-| `POST` | `/api/soulseek/login-test` | Test Soulseek credentials |
-| `GET` | `/api/services/status` | Source service health |
-
 ---
 
 ## Build from Source
@@ -235,7 +207,19 @@ The Docker image bundles a pre-compiled `sldl` for linux/amd64 and linux/arm64.
 ```bash
 git clone https://github.com/kushiemoon-dev/YouFLAC.git
 cd YouFLAC
+```
 
+### Desktop app (Wails)
+
+```bash
+wails build
+```
+
+Output: `build/bin/youflac`. Requires the [Wails CLI](https://wails.io) (`go install github.com/wailsapp/wails/v2/cmd/wails@latest`), Go 1.25+, Node.js 22+, pnpm 11+.
+
+### Headless server
+
+```bash
 # Build frontend
 cd frontend && pnpm install --frozen-lockfile && pnpm build && cd ..
 

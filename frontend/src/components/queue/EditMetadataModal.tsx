@@ -50,7 +50,7 @@ export function EditMetadataModal({ item, onClose, onRetry }: EditMetadataModalP
         {/* Header */}
         <div
           className="flex items-center justify-between px-5 py-4"
-          style={{ borderBottom: '1px solid var(--color-border)', flexShrink: 0 }}
+          style={{ borderBottom: '1px solid var(--color-border-default)', flexShrink: 0 }}
         >
           <h3 className="font-semibold" style={{ color: 'var(--color-text-primary)' }}>
             Edit Track Metadata
@@ -120,7 +120,7 @@ export function EditMetadataModal({ item, onClose, onRetry }: EditMetadataModalP
                         background: selectedCandidate === c
                           ? 'var(--color-accent-subtle, rgba(var(--color-accent-rgb, 99,102,241),0.12))'
                           : 'var(--color-bg-secondary)',
-                        border: `1px solid ${selectedCandidate === c ? 'var(--color-accent)' : 'var(--color-border)'}`,
+                        border: `1px solid ${selectedCandidate === c ? 'var(--color-accent)' : 'var(--color-border-default)'}`,
                       }}
                     >
                       <input
@@ -167,7 +167,7 @@ export function EditMetadataModal({ item, onClose, onRetry }: EditMetadataModalP
           {/* Footer */}
           <div
             className="flex items-center justify-end gap-3 px-5 py-4"
-            style={{ borderTop: '1px solid var(--color-border)', flexShrink: 0 }}
+            style={{ borderTop: '1px solid var(--color-border-default)', flexShrink: 0 }}
           >
             <button type="button" className="btn btn-ghost" onClick={onClose}>
               Cancel
