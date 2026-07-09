@@ -1,4 +1,4 @@
-package main
+package app
 
 import (
 	"context"
@@ -441,7 +441,7 @@ func sandboxPath(root, p string) (string, error) {
 // the embedded frontend assets handle the rest.
 //
 // Route: GET /preview?url=<youtube_url>&seconds=30
-func (a *App) previewAssetHandler() http.Handler {
+func (a *App) PreviewAssetHandler() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet || r.URL.Path != "/preview" {
 			http.NotFound(w, r)

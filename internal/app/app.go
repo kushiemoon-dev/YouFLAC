@@ -1,4 +1,4 @@
-package main
+package app
 
 import (
 	"context"
@@ -33,7 +33,7 @@ func NewApp() *App {
 // anything Fiber/HTTP-specific (no server.NewServer, no Listen). Queue
 // progress is pushed to the frontend via runtime.EventsEmit instead of a
 // WebSocket broadcast.
-func (a *App) startup(ctx context.Context) {
+func (a *App) Startup(ctx context.Context) {
 	a.ctx = ctx
 
 	config, err := core.LoadConfigWithEnv()
@@ -94,7 +94,7 @@ func (a *App) startup(ctx context.Context) {
 	a.queue.StartProcessing()
 }
 
-func (a *App) shutdown(ctx context.Context) {
+func (a *App) Shutdown(ctx context.Context) {
 	a.queue.StopProcessing()
 	a.queue.SaveQueue()
 }

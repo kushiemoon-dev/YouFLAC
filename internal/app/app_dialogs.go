@@ -1,4 +1,4 @@
-package main
+package app
 
 import (
 	"github.com/wailsapp/wails/v2/pkg/runtime"

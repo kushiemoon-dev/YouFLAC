@@ -1,4 +1,4 @@
-package main
+package app
 
 import (
 	"context"
@@ -17,9 +17,9 @@ import (
 
 // appVersion mirrors internal/api/handlers_system.go's AppVersion constant.
 // Kept as a separate, unexported copy here since app_system.go lives in
-// package main (not internal/api) and the two are not meant to share state.
+// package app (not internal/api) and the two are not meant to share state.
 // A var (not const) so release builds can set it via
-// -ldflags "-X main.appVersion=...".
+// -ldflags "-X youflac/internal/app.appVersion=...".
 var appVersion = "4.3.0"
 
 // Health is kept for parity with the HTTP server's /health endpoint, even
