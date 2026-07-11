@@ -8,8 +8,21 @@ on:
 jobs:
   frontend-build:
     runs-on: ubuntu-latest
+    env:
+      GOPRIVATE: github.com/kushiemoon-dev/*
+      GONOSUMDB: github.com/kushiemoon-dev/*
     steps:
       - uses: actions/checkout@v4
+
+      - name: Configure private Go modules
+        shell: bash
+        run: git config --global url."https://x-access-token:${{ secrets.CORE_ACCESS_TOKEN }}@github.com/".insteadOf "https://github.com/"
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.25'
+
       - uses: pnpm/action-setup@v4
         with:
           version: '11.1.1'
@@ -18,6 +31,13 @@ jobs:
           node-version: 22
           cache: 'pnpm'
           cache-dependency-path: frontend/pnpm-lock.yaml
+
+      - name: Install Wails CLI
+        run: go install github.com/wailsapp/wails/v2/cmd/wails@latest
+
+      - name: Generate Wails bindings
+        run: wails generate module
+
       - name: Build frontend
         working-directory: frontend
         run: pnpm install --frozen-lockfile && pnpm build
