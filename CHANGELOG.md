@@ -1,5 +1,25 @@
 # Changelog
 
+## v4.3.1 — 2026-07-11
+
+### New features
+- Wails desktop app restored as an alternative to the headless server mode, with native Windows/macOS build assets, alongside dedicated `internal/app/*` files split out to match youflac-core's package structure
+- Reliable, self-hosted star-history badge (replaces the flaky third-party service)
+
+### Fixes
+- Resolved 13 Dependabot alerts (7 critical, 2 high, 4 medium) by bumping the transitive `golang.org/x/crypto` dependency to `v0.52.0`
+- `golang.org/x/net` bumped to `v0.55.0` (DoS CVE)
+- Fiber bumped and esbuild pinned (2 Dependabot advisories); a bad assumption about 404 responses was reverted after it broke behavior
+- Jellyfin scan trigger documented in README
+
+### Internal
+- Core dependency bumped to `v4.3.1` — fixes a `channeljobs` test build break and makes the Tidal HiFi mirror base URL configurable via env instead of hardcoded (see [youflac-core's changelog](https://github.com/kushiemoon-dev/youflac-core/blob/main/CHANGELOG.md))
+- `handlers.go` (1,200+ lines) split into per-domain files under `internal/api/`, each with new characterization tests
+- Dead frontend code removed (per knip's report)
+- CI: dedicated PAT for private `youflac-core` module access
+
+---
+
 ## v4.3.0 — 2026-07-03
 
 ### New features
