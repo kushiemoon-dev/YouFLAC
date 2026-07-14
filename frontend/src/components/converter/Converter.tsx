@@ -3,6 +3,7 @@ import { Header } from '../layout/Header';
 import { Dropdown } from '../ui/Dropdown';
 import * as Api from '../../lib/api';
 import { EventsOn } from '../../lib/websocket';
+import { isWailsRuntime } from '../../lib/runtime';
 
 const formatOptions = [
   { value: 'mp3', label: 'MP3', description: 'Lossy, universally compatible' },
@@ -168,7 +169,15 @@ export function Converter() {
                   placeholder="/path/to/audio.flac"
                   className="w-full"
                 />
-                <button type="button" className="btn-secondary" onClick={browseSourceFile}>Browse…</button>
+                <button
+                  type="button"
+                  className="btn-secondary"
+                  onClick={browseSourceFile}
+                  disabled={!isWailsRuntime()}
+                  title={isWailsRuntime() ? undefined : 'Native file picker not available in browser mode — type the path directly'}
+                >
+                  Browse…
+                </button>
               </div>
               <p className="text-xs mt-1" style={{ color: 'var(--color-text-tertiary)' }}>
                 Full path to the audio file to convert
@@ -255,7 +264,15 @@ export function Converter() {
                   placeholder="/path/to/music/folder"
                   className="w-full"
                 />
-                <button type="button" className="btn-secondary" onClick={browseSourceDirectory}>Browse…</button>
+                <button
+                  type="button"
+                  className="btn-secondary"
+                  onClick={browseSourceDirectory}
+                  disabled={!isWailsRuntime()}
+                  title={isWailsRuntime() ? undefined : 'Native folder picker not available in browser mode — type the path directly'}
+                >
+                  Browse…
+                </button>
               </div>
               <p className="text-xs mt-1" style={{ color: 'var(--color-text-tertiary)' }}>
                 Full path to the folder containing audio files
