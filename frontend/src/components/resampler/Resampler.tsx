@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import * as Api from '../../lib/api'
 import type { ResampleOptions, ResampleResult } from '../../lib/api'
+import { isWailsRuntime } from '../../lib/runtime'
 
 const SAMPLE_RATES = [44100, 48000, 88200, 96000, 176400, 192000]
 const BIT_DEPTHS = [16, 24, 32]
@@ -47,7 +48,15 @@ export function Resampler() {
             <div className="flex gap-2">
               <input className="w-full px-3 py-2 rounded text-sm" style={{ border: '1px solid var(--color-border-default)', background: 'var(--color-bg-secondary)', color: 'var(--color-text-primary)' }}
                 value={opts.inputPath} onChange={e => setOpts((o: ResampleOptions) => ({ ...o, inputPath: e.target.value }))} placeholder="/path/to/input.wav" />
-              <button type="button" className="btn btn-secondary" onClick={browseInput}>Browse…</button>
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={browseInput}
+                disabled={!isWailsRuntime()}
+                title={isWailsRuntime() ? undefined : 'Native file picker not available in browser mode — type the path directly'}
+              >
+                Browse…
+              </button>
             </div>
           </div>
           <div>
@@ -55,7 +64,15 @@ export function Resampler() {
             <div className="flex gap-2">
               <input className="w-full px-3 py-2 rounded text-sm" style={{ border: '1px solid var(--color-border-default)', background: 'var(--color-bg-secondary)', color: 'var(--color-text-primary)' }}
                 value={opts.outputPath} onChange={e => setOpts((o: ResampleOptions) => ({ ...o, outputPath: e.target.value }))} placeholder="/path/to/output.flac" />
-              <button type="button" className="btn btn-secondary" onClick={browseOutput}>Browse…</button>
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={browseOutput}
+                disabled={!isWailsRuntime()}
+                title={isWailsRuntime() ? undefined : 'Native save picker not available in browser mode — type the path directly'}
+              >
+                Browse…
+              </button>
             </div>
           </div>
           <div className="flex gap-4">

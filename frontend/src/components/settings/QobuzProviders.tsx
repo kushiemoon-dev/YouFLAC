@@ -2,13 +2,6 @@ import { useState, useEffect } from 'react';
 import * as Api from '../../lib/api';
 import { Toggle } from '../ui/Toggle';
 
-const PROVIDERS: { id: string; label: string; description: string }[] = [
-  { id: 'dab', label: 'DAB', description: 'Public proxy, no Qobuz account required' },
-  { id: 'wjhe', label: 'WJHE', description: 'Alternative community proxy' },
-  { id: 'gdstudio', label: 'GD Studio', description: 'GD Studio proxy' },
-  { id: 'musicdl', label: 'MusicDL', description: 'MusicDL proxy' },
-];
-
 export function QobuzProviders() {
   const [disabled, setDisabled] = useState<string[]>([]);
   const [available, setAvailable] = useState<string[]>([]);
@@ -76,27 +69,26 @@ export function QobuzProviders() {
           <p className="text-sm py-3" style={{ color: 'var(--color-error, #ef4444)' }}>{error}</p>
         )}
 
-        {!loading && !error && (
+        {!loading && !error && available.length === 0 && (
+          <p className="text-sm py-3" style={{ color: 'var(--color-text-tertiary)' }}>
+            No Qobuz providers are configured.
+          </p>
+        )}
+
+        {!loading && !error && available.length > 0 && (
           <div className="divide-y" style={{ '--tw-divide-opacity': 1 } as React.CSSProperties}>
-            {PROVIDERS.map((p) => {
-              const isAvailable = available.length === 0 || available.includes(p.id);
-              const isEnabled = !disabled.includes(p.id);
+            {available.map((id) => {
+              const isEnabled = !disabled.includes(id);
               return (
-                <div key={p.id} className="flex items-center justify-between gap-4 py-2.5">
+                <div key={id} className="flex items-center justify-between gap-4 py-2.5">
                   <div className="flex-1 min-w-0">
-                    <p
-                      className="text-sm font-medium"
-                      style={{ color: isAvailable ? 'var(--color-text-primary)' : 'var(--color-text-tertiary)' }}
-                    >
-                      {p.label}
-                    </p>
-                    <p className="text-xs mt-0.5" style={{ color: 'var(--color-text-tertiary)' }}>
-                      {p.description}
+                    <p className="text-sm font-medium" style={{ color: 'var(--color-text-primary)' }}>
+                      {id}
                     </p>
                   </div>
                   <Toggle
                     checked={isEnabled}
-                    onChange={(v) => toggle(p.id, v)}
+                    onChange={(v) => toggle(id, v)}
                   />
                 </div>
               );

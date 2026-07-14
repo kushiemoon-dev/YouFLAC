@@ -30,6 +30,12 @@ func (s *Server) handleAddToQueue(c *fiber.Ctx) error {
 		if core.IsQobuzURL(req.VideoURL) || core.IsTidalURL(req.VideoURL) || songlink.IsSpotifyURL(req.VideoURL) {
 			req.SpotifyURL = req.VideoURL
 			req.VideoURL = ""
+		} else if core.IsAmazonURL(req.VideoURL) {
+			// Amazon is deliberately not routable by URL (AmazonSource.CanHandleURL
+			// always returns false — it's a fallback-only source matched via
+			// ISRC/title+artist search, see core.DetectURLSource). Fail clearly here
+			// instead of letting it fall through to the generic YouTube URL error.
+			return c.Status(400).JSON(fiber.Map{"error": "Amazon Music is not supported as direct input — it's a fallback-only source. Use title/artist search or a different source URL instead."})
 		}
 	}
 

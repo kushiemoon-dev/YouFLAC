@@ -174,14 +174,23 @@ func (a *App) SetSourcePriority(priority []string) error {
 
 // ── Qobuz providers ────────────────────────────────────────────────────────
 
+// GetQobuzProviders reports the providers actually configured at runtime
+// (Config.QobuzProxyProviders / env QOBUZ_PROXY_PROVIDERS), not a hardcoded
+// registry — "available" is empty unless the operator opted in. Limitation:
+// this is config state, not live per-provider health; the core does not
+// currently expose whether an enabled provider is actually reachable (see
+// QobuzSource.IsAvailable, which is source-wide, not per-provider).
 func (a *App) GetQobuzProviders() map[string]any {
-	all := []string{"dab", "wjhe", "gdstudio", "musicdl"}
+	available := a.config.QobuzProxyProviders
+	if available == nil {
+		available = []string{}
+	}
 	disabled := a.config.QobuzProvidersDisabled
 	if disabled == nil {
 		disabled = []string{}
 	}
 	return map[string]any{
-		"available": all,
+		"available": available,
 		"disabled":  disabled,
 	}
 }

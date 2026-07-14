@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	core "github.com/kushiemoon-dev/youflac-core/v4"
@@ -108,6 +109,31 @@ func TestHandleAddToQueue_RoutesMusicServiceURLToSpotifyURL(t *testing.T) {
 	}
 	if item.VideoURL != "" {
 		t.Errorf("VideoURL: got %q, want empty", item.VideoURL)
+	}
+}
+
+// TestHandleAddToQueue_AmazonURL_ReturnsClearError verifies that a pasted
+// Amazon Music URL gets a specific, actionable error instead of falling
+// through to the generic YouTube URL validation error. Amazon is
+// deliberately not routable by URL (see core.IsAmazonURL / DetectURLSource
+// doc comments — AmazonSource is fallback-only), so this must not be routed
+// like Qobuz/Tidal/Spotify.
+func TestHandleAddToQueue_AmazonURL_ReturnsClearError(t *testing.T) {
+	s := newTestServer(t)
+	body, _ := json.Marshal(map[string]string{"videoUrl": "https://music.amazon.com/albums/B08JQZTMV3"})
+	req := httptest.NewRequest(http.MethodPost, "/api/queue", bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := s.app.Test(req, 5000)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if resp.StatusCode != http.StatusBadRequest {
+		t.Fatalf("expected 400, got %d", resp.StatusCode)
+	}
+	var result map[string]string
+	json.NewDecoder(resp.Body).Decode(&result)
+	if !strings.Contains(result["error"], "fallback-only") {
+		t.Errorf("error = %q, want a message explaining Amazon is fallback-only", result["error"])
 	}
 }
 

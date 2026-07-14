@@ -14,9 +14,15 @@ import (
 
 func (s *Server) handleGetSources(c *fiber.Ctx) error {
 	if s.sourceMgr == nil {
-		return c.JSON([]core.SourceInfo{})
+		return c.JSON(fiber.Map{
+			"initialized": false,
+			"sources":     []core.SourceInfo{},
+		})
 	}
-	return c.JSON(s.sourceMgr.GetSourcesInfo())
+	return c.JSON(fiber.Map{
+		"initialized": true,
+		"sources":     s.sourceMgr.GetSourcesInfo(),
+	})
 }
 
 func (s *Server) handleSetSourcePriority(c *fiber.Ctx) error {
@@ -43,14 +49,24 @@ func (s *Server) handleSetSourcePriority(c *fiber.Ctx) error {
 
 // ── Qobuz providers ────────────────────────────────────────────────────────
 
+// handleGetQobuzProviders reports the providers actually configured at
+// runtime (Config.QobuzProxyProviders / env QOBUZ_PROXY_PROVIDERS), not a
+// hardcoded registry — "available" is empty unless the operator opted in.
+// Limitation: this is config state, not live per-provider health; the core
+// does not currently expose whether an enabled provider is actually
+// reachable (see QobuzSource.IsAvailable, which is source-wide, not
+// per-provider).
 func (s *Server) handleGetQobuzProviders(c *fiber.Ctx) error {
-	all := []string{"dab", "wjhe", "gdstudio", "musicdl"}
+	available := s.config.QobuzProxyProviders
+	if available == nil {
+		available = []string{}
+	}
 	disabledList := s.config.QobuzProvidersDisabled
 	if disabledList == nil {
 		disabledList = []string{}
 	}
 	return c.JSON(fiber.Map{
-		"available": all,
+		"available": available,
 		"disabled":  disabledList,
 	})
 }

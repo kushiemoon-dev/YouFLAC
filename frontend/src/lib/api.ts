@@ -1,12 +1,15 @@
 /**
- * Wails bindings client. Every exported function/type here keeps its exact
- * pre-existing name and signature (this file used to be an HTTP client
- * calling a local Fiber server) — only the internal implementation changed,
- * from fetch() to generated Wails Go bindings, so none of the ~40 files that
- * import from here need to change.
+ * Dual-mode API client. Every exported function keeps its exact pre-existing
+ * name and signature: it detects at runtime whether the app is running in
+ * the Wails desktop webview or a plain browser tab (see lib/runtime.ts) and
+ * dispatches to the generated Wails bindings or to a fetch() call against
+ * the headless Fiber server accordingly. None of the ~40 files that import
+ * from here need to know which mode is active.
  */
 
 import * as App from '../../wailsjs/go/app/App';
+import { isWailsRuntime } from './runtime';
+import { EventsOn as wsEventsOn } from './websocket';
 
 // Types (matching backend models)
 export interface Config {
@@ -225,125 +228,239 @@ export interface FlattenPlaylistResult {
   errors?: string[];
 }
 
+// ============== HTTP client (headless/browser mode) ==============
+
+// API Base URL - empty for same-origin (production), can be set for dev
+const API_BASE = import.meta.env.VITE_API_URL || '';
+
+// Generic fetch helper, used by every browser-mode function below.
+async function api<T>(path: string, options?: RequestInit): Promise<T> {
+  const res = await fetch(`${API_BASE}/api${path}`, {
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    ...options,
+  });
+
+  if (!res.ok) {
+    const errorText = await res.text();
+    throw new Error(errorText || `HTTP ${res.status}`);
+  }
+
+  // Handle empty responses
+  const text = await res.text();
+  if (!text) return {} as T;
+
+  return JSON.parse(text);
+}
+
+// Native OS dialogs (SelectAudioFile/SelectDirectory/SelectSaveAudioFile) have
+// no sane browser equivalent — a <input type=file> can't return an absolute
+// server-side path. Callers should gate the triggering UI on isWailsRuntime()
+// (see Converter.tsx/Resampler.tsx Browse buttons); this is the fallback for
+// anything that calls them anyway, so it fails loudly instead of trying to
+// read `window.go` and crashing with a cryptic TypeError.
+function requireWails(fnName: string): never {
+  throw new Error(`${fnName}() needs the desktop app (native OS dialog) — not available in browser mode.`);
+}
+
 // ============== Queue API ==============
 
 export async function GetQueue(): Promise<QueueItem[]> {
-  return App.GetQueue() as unknown as Promise<QueueItem[]>;
+  if (isWailsRuntime()) return App.GetQueue() as unknown as Promise<QueueItem[]>;
+  return api<QueueItem[]>('/queue');
 }
 
 export async function AddToQueue(request: DownloadRequest): Promise<string> {
-  return App.AddToQueue(request as any);
+  if (isWailsRuntime()) return App.AddToQueue(request as any);
+  const res = await api<{ id: string }>('/queue', {
+    method: 'POST',
+    body: JSON.stringify(request),
+  });
+  return res.id;
 }
 
 export async function RemoveFromQueue(id: string): Promise<void> {
-  await App.RemoveFromQueue(id);
+  if (isWailsRuntime()) {
+    await App.RemoveFromQueue(id);
+    return;
+  }
+  await api<void>(`/queue/${id}`, { method: 'DELETE' });
 }
 
 export async function CancelQueueItem(id: string): Promise<void> {
-  await App.CancelQueueItem(id);
+  if (isWailsRuntime()) {
+    await App.CancelQueueItem(id);
+    return;
+  }
+  await api<void>(`/queue/${id}/cancel`, { method: 'POST' });
 }
 
 export async function MoveQueueItem(id: string, newPosition: number): Promise<void> {
-  await App.MoveQueueItem(id, newPosition);
+  if (isWailsRuntime()) {
+    await App.MoveQueueItem(id, newPosition);
+    return;
+  }
+  await api<void>(`/queue/${id}/move`, {
+    method: 'PUT',
+    body: JSON.stringify({ newPosition }),
+  });
 }
 
 export async function GetQueueStats(): Promise<QueueStats> {
-  return App.GetQueueStats() as unknown as Promise<QueueStats>;
+  if (isWailsRuntime()) return App.GetQueueStats() as unknown as Promise<QueueStats>;
+  return api<QueueStats>('/queue/stats');
 }
 
 export async function ClearCompleted(): Promise<number> {
-  return App.ClearCompleted();
+  if (isWailsRuntime()) return App.ClearCompleted();
+  const res = await api<{ cleared: number }>('/queue/clear', { method: 'POST' });
+  return res.cleared;
 }
 
 export async function RetryFailed(): Promise<number> {
-  return App.RetryFailed();
+  if (isWailsRuntime()) return App.RetryFailed();
+  const res = await api<{ retried: number }>('/queue/retry', { method: 'POST' });
+  return res.retried;
 }
 
 export async function retryWithOverride(id: string, req: RetryOverrideRequest): Promise<QueueItem> {
-  return App.RetryQueueItemWithOverride(id, req as any) as unknown as Promise<QueueItem>;
+  if (isWailsRuntime()) {
+    return App.RetryQueueItemWithOverride(id, req as any) as unknown as Promise<QueueItem>;
+  }
+  return api<QueueItem>(`/queue/${id}/retry-override`, {
+    method: 'POST',
+    body: JSON.stringify(req),
+  });
 }
 
 export async function RetryQueueItemWithSource(id: string, forceSource: string): Promise<void> {
   const body: RetryOverrideRequest = {};
   if (forceSource && forceSource !== 'auto') body.forceSource = forceSource;
-  await App.RetryQueueItemWithOverride(id, body as any);
+  if (isWailsRuntime()) {
+    await App.RetryQueueItemWithOverride(id, body as any);
+    return;
+  }
+  await api(`/queue/${id}/retry-override`, { method: 'POST', body: JSON.stringify(body) });
 }
 
 export async function ClearQueue(): Promise<void> {
-  // Same server-side action as ClearCompleted — only one Go method exists.
-  await App.ClearCompleted();
+  if (isWailsRuntime()) {
+    // Same server-side action as ClearCompleted — only one Go method exists.
+    await App.ClearCompleted();
+    return;
+  }
+  await api<void>('/queue/clear', { method: 'POST' });
 }
 
 export async function PauseAll(): Promise<number> {
-  return App.PauseAll();
+  if (isWailsRuntime()) return App.PauseAll();
+  const res = await api<{ paused: number }>('/queue/pause-all', { method: 'POST' });
+  return res.paused;
 }
 
 export async function ResumeAll(): Promise<number> {
-  return App.ResumeAll();
+  if (isWailsRuntime()) return App.ResumeAll();
+  const res = await api<{ resumed: number }>('/queue/resume-all', { method: 'POST' });
+  return res.resumed;
 }
 
 export async function FetchLogs(sinceId: number): Promise<LogEntry[]> {
-  return App.GetLogs(sinceId) as unknown as Promise<LogEntry[]>;
+  if (isWailsRuntime()) return App.GetLogs(sinceId) as unknown as Promise<LogEntry[]>;
+  return api<LogEntry[]>(`/logs?since=${sinceId}`);
 }
 
 export async function GetItemLogs(id: string): Promise<LogEntry[]> {
-  return App.GetItemLogs(id) as unknown as Promise<LogEntry[]>;
+  if (isWailsRuntime()) return App.GetItemLogs(id) as unknown as Promise<LogEntry[]>;
+  return api<LogEntry[]>(`/queue/${encodeURIComponent(id)}/logs`);
 }
 
 // ============== Playlist API ==============
 
 export async function AddPlaylistToQueue(url: string, quality?: string): Promise<string[]> {
-  // maxVideos: 0 = unlimited, matching the backend's default when unset.
-  const res = await App.AddPlaylistToQueue(url, quality ?? '', 0);
+  if (isWailsRuntime()) {
+    // maxVideos: 0 = unlimited, matching the backend's default when unset.
+    const res = await App.AddPlaylistToQueue(url, quality ?? '', 0);
+    return res.ids;
+  }
+  const res = await api<{ ids: string[]; playlistTitle: string }>('/playlist', {
+    method: 'POST',
+    body: JSON.stringify({ url, quality }),
+  });
   return res.ids;
 }
 
 // ============== Config API ==============
 
 export async function GetConfig(): Promise<Config> {
-  return App.GetConfig() as unknown as Promise<Config>;
+  if (isWailsRuntime()) return App.GetConfig() as unknown as Promise<Config>;
+  return api<Config>('/config');
 }
 
 export async function SaveConfig(config: Config): Promise<void> {
-  await App.SaveConfig(config as any);
+  if (isWailsRuntime()) {
+    await App.SaveConfig(config as any);
+    return;
+  }
+  await api<void>('/config', {
+    method: 'POST',
+    body: JSON.stringify(config),
+  });
 }
 
 export async function GetDefaultOutputDirectory(): Promise<string> {
-  return App.GetDefaultOutputDirectory();
+  if (isWailsRuntime()) return App.GetDefaultOutputDirectory();
+  const res = await api<{ path: string }>('/config/default-output');
+  return res.path;
 }
 
 // ============== History API ==============
 
 export async function GetHistory(): Promise<HistoryEntry[]> {
-  return App.GetHistory() as unknown as Promise<HistoryEntry[]>;
+  if (isWailsRuntime()) return App.GetHistory() as unknown as Promise<HistoryEntry[]>;
+  return api<HistoryEntry[]>('/history');
 }
 
 export async function GetHistoryStats(): Promise<HistoryStats> {
-  return App.GetHistoryStats() as unknown as Promise<HistoryStats>;
+  if (isWailsRuntime()) return App.GetHistoryStats() as unknown as Promise<HistoryStats>;
+  return api<HistoryStats>('/history/stats');
 }
 
 export async function SearchHistory(query: string): Promise<HistoryEntry[]> {
-  return App.SearchHistory(query, '', '') as unknown as Promise<HistoryEntry[]>;
+  if (isWailsRuntime()) return App.SearchHistory(query, '', '') as unknown as Promise<HistoryEntry[]>;
+  return api<HistoryEntry[]>(`/history/search?q=${encodeURIComponent(query)}`);
 }
 
 export async function DeleteHistoryEntry(id: string): Promise<void> {
-  await App.DeleteHistoryEntry(id);
+  if (isWailsRuntime()) {
+    await App.DeleteHistoryEntry(id);
+    return;
+  }
+  await api<void>(`/history/${id}`, { method: 'DELETE' });
 }
 
 export async function ClearHistory(): Promise<void> {
-  await App.ClearHistory();
+  if (isWailsRuntime()) {
+    await App.ClearHistory();
+    return;
+  }
+  await api<void>('/history/clear', { method: 'POST' });
 }
 
 export async function RedownloadFromHistory(id: string): Promise<string> {
-  return App.RedownloadFromHistory(id);
+  if (isWailsRuntime()) return App.RedownloadFromHistory(id);
+  const res = await api<{ id: string }>(`/history/${id}/redownload`, { method: 'POST' });
+  return res.id;
 }
 
 export async function FilterHistoryBySource(source: string): Promise<HistoryEntry[]> {
-  return App.SearchHistory('', source, '') as unknown as Promise<HistoryEntry[]>;
+  if (isWailsRuntime()) return App.SearchHistory('', source, '') as unknown as Promise<HistoryEntry[]>;
+  return api<HistoryEntry[]>(`/history/search?source=${encodeURIComponent(source)}`);
 }
 
 export async function FilterHistoryByStatus(status: string): Promise<HistoryEntry[]> {
-  return App.SearchHistory('', '', status) as unknown as Promise<HistoryEntry[]>;
+  if (isWailsRuntime()) return App.SearchHistory('', '', status) as unknown as Promise<HistoryEntry[]>;
+  return api<HistoryEntry[]>(`/history/search?status=${encodeURIComponent(status)}`);
 }
 
 // ============== Converter API ==============
@@ -362,7 +479,11 @@ export interface ConvertResult {
 }
 
 export async function ConvertAudio(req: ConvertRequest): Promise<ConvertResult> {
-  return App.Convert(req as any) as unknown as Promise<ConvertResult>;
+  if (isWailsRuntime()) return App.Convert(req as any) as unknown as Promise<ConvertResult>;
+  return api<ConvertResult>('/convert', {
+    method: 'POST',
+    body: JSON.stringify(req),
+  });
 }
 
 export interface ConvertDirOptions {
@@ -383,23 +504,47 @@ export interface DirConvertResult {
 }
 
 export async function ConvertDirectory(opts: ConvertDirOptions): Promise<DirConvertResult> {
-  // The Wails binding returns the real final result (same shape as the
-  // convert_progress event payload); the old HTTP endpoint only returned a
-  // generic {success, message} ack, so callers reading the richer fields
-  // below are new, not a behavior change for existing callers.
-  return App.ConvertDirectory(opts as any) as unknown as Promise<DirConvertResult>;
+  if (isWailsRuntime()) {
+    // The Wails binding returns the real final result (same shape as the
+    // convert_progress event payload) directly.
+    return App.ConvertDirectory(opts as any) as unknown as Promise<DirConvertResult>;
+  }
+  // The HTTP endpoint (internal/api/handlers_audio_tools.go) only acks
+  // {success, message} — the real per-file and final results stream over
+  // /ws as "convert_progress" events instead. Wait for the event carrying
+  // done:true so this function resolves with the real result either way,
+  // matching the Wails binding's contract for callers (e.g. Converter.tsx).
+  return new Promise<DirConvertResult>((resolve, reject) => {
+    const unsubscribe = wsEventsOn('convert_progress', (data: DirConvertResult) => {
+      if (data.done) {
+        unsubscribe();
+        resolve(data);
+      }
+    });
+    api<{ success: boolean; message: string }>('/converter/directory', {
+      method: 'POST',
+      body: JSON.stringify(opts),
+    }).catch((err) => {
+      unsubscribe();
+      reject(err);
+    });
+  });
 }
 
 // ============== Search API ==============
 
 export async function SearchYouTube(query: string, limit?: number): Promise<VideoInfo[]> {
-  return App.Search(query, limit ?? 0) as unknown as Promise<VideoInfo[]>;
+  if (isWailsRuntime()) return App.Search(query, limit ?? 0) as unknown as Promise<VideoInfo[]>;
+  let url = `/search?q=${encodeURIComponent(query)}`;
+  if (limit) url += `&limit=${limit}`;
+  return api<VideoInfo[]>(url);
 }
 
 // ============== Video/URL API ==============
 
 export async function GetVideoInfo(url: string): Promise<VideoInfo> {
-  return App.GetVideoInfo(url) as unknown as Promise<VideoInfo>;
+  if (isWailsRuntime()) return App.GetVideoInfo(url) as unknown as Promise<VideoInfo>;
+  return api<VideoInfo>(`/video/info?url=${encodeURIComponent(url)}`);
 }
 
 // ============== Channel API ==============
@@ -411,43 +556,77 @@ export async function ChannelFetch(
   playlistID: string,
   maxItems: number
 ): Promise<string> {
-  return App.ChannelFetch(url, includeShorts, onlyLongForm, playlistID, maxItems);
+  if (isWailsRuntime()) return App.ChannelFetch(url, includeShorts, onlyLongForm, playlistID, maxItems);
+  const res = await api<{ jobID: string }>('/channel/fetch', {
+    method: 'POST',
+    body: JSON.stringify({ url, includeShorts, onlyLongForm, playlistID, maxItems }),
+  });
+  return res.jobID;
 }
 
 export async function ChannelFetchCancel(jobID: string): Promise<void> {
-  await App.ChannelFetchCancel(jobID);
+  if (isWailsRuntime()) {
+    await App.ChannelFetchCancel(jobID);
+    return;
+  }
+  await api<void>(`/channel/fetch/${encodeURIComponent(jobID)}/cancel`, { method: 'POST' });
 }
 
 // ============== Files API ==============
 
 export async function ListFiles(dir: string, filter?: string): Promise<FileInfo[]> {
-  return App.ListFiles(dir, filter ?? '') as unknown as Promise<FileInfo[]>;
+  if (isWailsRuntime()) return App.ListFiles(dir, filter ?? '') as unknown as Promise<FileInfo[]>;
+  let url = `/files?dir=${encodeURIComponent(dir)}`;
+  if (filter) url += `&filter=${encodeURIComponent(filter)}`;
+  return api<FileInfo[]>(url);
 }
 
 export async function GetPlaylistFolders(): Promise<string[]> {
-  return App.GetPlaylistFolders();
+  if (isWailsRuntime()) return App.GetPlaylistFolders();
+  return api<string[]>('/files/playlists');
 }
 
 export async function ReorganizePlaylist(folderPath: string): Promise<ReorganizePlaylistResult> {
-  return App.ReorganizePlaylist(folderPath) as unknown as Promise<ReorganizePlaylistResult>;
+  if (isWailsRuntime()) return App.ReorganizePlaylist(folderPath) as unknown as Promise<ReorganizePlaylistResult>;
+  return api<ReorganizePlaylistResult>('/files/reorganize', {
+    method: 'POST',
+    body: JSON.stringify({ folderPath }),
+  });
 }
 
 export async function FlattenPlaylistFolder(folderPath: string): Promise<FlattenPlaylistResult> {
-  return App.FlattenPlaylist(folderPath) as unknown as Promise<FlattenPlaylistResult>;
+  if (isWailsRuntime()) return App.FlattenPlaylist(folderPath) as unknown as Promise<FlattenPlaylistResult>;
+  return api<FlattenPlaylistResult>('/files/flatten', {
+    method: 'POST',
+    body: JSON.stringify({ folderPath }),
+  });
 }
 
 // ============== Analyzer API ==============
 
 export async function AnalyzeAudio(filePath: string): Promise<AudioAnalysis> {
-  return App.AnalyzeAudio(filePath) as unknown as Promise<AudioAnalysis>;
+  if (isWailsRuntime()) return App.AnalyzeAudio(filePath) as unknown as Promise<AudioAnalysis>;
+  return api<AudioAnalysis>('/analyze', {
+    method: 'POST',
+    body: JSON.stringify({ filePath }),
+  });
 }
 
 export async function GenerateSpectrogram(filePath: string): Promise<string> {
-  // Returns a data: URL directly now (image already inlined server-side),
-  // where the old HTTP path returned a temp file path that a second
-  // GetImageAsDataURL() call had to resolve. Existing callers that fed this
-  // straight into an <img src> keep working unchanged either way.
-  return App.GenerateSpectrogram(filePath);
+  if (isWailsRuntime()) {
+    // Returns a data: URL directly (image already inlined server-side by
+    // the Wails binding); existing callers that feed this straight into an
+    // <img src> keep working unchanged.
+    return App.GenerateSpectrogram(filePath);
+  }
+  // The HTTP endpoint still returns a temp file path — a second
+  // GetImageAsDataURL() call resolves it (see AudioAnalyzer.tsx, which
+  // already does this two-step call).
+  const res = await api<{ path: string }>('/analyze/spectrogram', {
+    method: 'POST',
+    body: JSON.stringify({ filePath }),
+  });
+  return res.path;
 }
 
 // ============== Resampler API ==============
@@ -467,42 +646,56 @@ export interface ResampleResult {
   durationMs: number;
 }
 export async function Resample(opts: ResampleOptions): Promise<ResampleResult> {
-  return App.Resample(opts as any) as unknown as Promise<ResampleResult>;
+  if (isWailsRuntime()) return App.Resample(opts as any) as unknown as Promise<ResampleResult>;
+  return api<ResampleResult>('/resampler', { method: 'POST', body: JSON.stringify(opts) });
 }
 
 // ============== Image API ==============
 
 export async function GetImageAsDataURL(path: string): Promise<string> {
-  return App.GetImage(path);
+  if (isWailsRuntime()) return App.GetImage(path);
+  const res = await api<{ dataUrl: string }>(`/image?path=${encodeURIComponent(path)}`);
+  return res.dataUrl;
 }
 
 // ============== Misc API ==============
 
 export async function GetAppVersion(): Promise<string> {
-  const res: any = await App.GetVersion();
+  if (isWailsRuntime()) {
+    const res: any = await App.GetVersion();
+    return res.version;
+  }
+  const res = await api<{ version: string }>('/version');
   return res.version;
 }
 
 // ============== System API ==============
 
 export async function OpenConfigFolder(): Promise<void> {
-  await App.OpenConfigFolder();
+  if (isWailsRuntime()) {
+    await App.OpenConfigFolder();
+    return;
+  }
+  await api<void>('/system/open-config-folder', { method: 'POST' });
 }
 
 // ============== Dialogs API ==============
 // Native OS file/folder pickers, for use instead of hand-typed paths.
-// Return '' when the user cancels.
+// Wails-only — see requireWails() above. Return '' when the user cancels.
 
 export async function SelectAudioFile(): Promise<string> {
-  return App.SelectAudioFile();
+  if (isWailsRuntime()) return App.SelectAudioFile();
+  requireWails('SelectAudioFile');
 }
 
 export async function SelectDirectory(): Promise<string> {
-  return App.SelectDirectory();
+  if (isWailsRuntime()) return App.SelectDirectory();
+  requireWails('SelectDirectory');
 }
 
 export async function SelectSaveAudioFile(defaultFilename: string): Promise<string> {
-  return App.SelectSaveAudioFile(defaultFilename);
+  if (isWailsRuntime()) return App.SelectSaveAudioFile(defaultFilename);
+  requireWails('SelectSaveAudioFile');
 }
 
 export interface UpdateCheckResult {
@@ -513,17 +706,24 @@ export interface UpdateCheckResult {
 }
 
 export async function CheckForUpdates(): Promise<UpdateCheckResult> {
-  return App.UpdateCheck() as unknown as Promise<UpdateCheckResult>;
+  if (isWailsRuntime()) return App.UpdateCheck() as unknown as Promise<UpdateCheckResult>;
+  const res = await fetch('/api/system/update-check');
+  if (!res.ok) throw new Error('update check failed');
+  return res.json();
 }
 
 // ============== Preview API ==============
 
 // Returns the URL for streaming a short audio preview (OGG/Vorbis).
-// Use directly as <audio src> — no fetch needed. Served by the Wails
-// AssetServer's custom handler (see app_files.go's previewAssetHandler),
-// not the old /api/video/preview HTTP route.
+// Use directly as <audio src> — no fetch needed. In Wails mode this is
+// served by the AssetServer's custom handler (see app_files.go's
+// previewAssetHandler); in browser mode it's the headless server's
+// /api/video/preview route.
 export function GetPreviewURL(videoURL: string, seconds = 30): string {
-  return `/preview?url=${encodeURIComponent(videoURL)}&seconds=${seconds}`;
+  if (isWailsRuntime()) {
+    return `/preview?url=${encodeURIComponent(videoURL)}&seconds=${seconds}`;
+  }
+  return `/api/video/preview?url=${encodeURIComponent(videoURL)}&seconds=${seconds}`;
 }
 
 // ============== Sources API ==============
@@ -535,11 +735,19 @@ export interface SourceInfo {
 }
 
 export async function GetSources(): Promise<SourceInfo[]> {
-  return App.GetSources() as unknown as Promise<SourceInfo[]>;
+  if (isWailsRuntime()) return App.GetSources() as unknown as Promise<SourceInfo[]>;
+  return api<SourceInfo[]>('/sources');
 }
 
 export async function SetSourcePriority(names: string[]): Promise<void> {
-  await App.SetSourcePriority(names);
+  if (isWailsRuntime()) {
+    await App.SetSourcePriority(names);
+    return;
+  }
+  await api<void>('/sources/priority', {
+    method: 'PUT',
+    body: JSON.stringify({ priority: names }),
+  });
 }
 
 // ============== Soulseek API ==============
@@ -560,13 +768,22 @@ export interface SoulseekLoginTestResult {
 }
 
 export async function GetSoulseekStatus(): Promise<SoulseekStatus> {
-  const res: any = await App.GetSoulseekStatus();
-  return res;
+  if (isWailsRuntime()) {
+    const res: any = await App.GetSoulseekStatus();
+    return res;
+  }
+  return api<SoulseekStatus>('/soulseek/status');
 }
 
 export async function TestSoulseekLogin(username: string, password: string): Promise<SoulseekLoginTestResult> {
-  const res: any = await App.SoulseekLoginTest(username, password);
-  return res;
+  if (isWailsRuntime()) {
+    const res: any = await App.SoulseekLoginTest(username, password);
+    return res;
+  }
+  return api<SoulseekLoginTestResult>('/soulseek/login-test', {
+    method: 'POST',
+    body: JSON.stringify({ username, password }),
+  });
 }
 
 // ============== Qobuz Providers API ==============
@@ -577,10 +794,20 @@ export interface QobuzProvidersConfig {
 }
 
 export async function GetQobuzProviders(): Promise<QobuzProvidersConfig> {
-  const res: any = await App.GetQobuzProviders();
-  return res;
+  if (isWailsRuntime()) {
+    const res: any = await App.GetQobuzProviders();
+    return res;
+  }
+  return api<QobuzProvidersConfig>('/qobuz/providers');
 }
 
 export async function SetQobuzProviders(disabled: string[]): Promise<void> {
-  await App.SetQobuzProviders(disabled);
+  if (isWailsRuntime()) {
+    await App.SetQobuzProviders(disabled);
+    return;
+  }
+  await api<void>('/qobuz/providers', {
+    method: 'PUT',
+    body: JSON.stringify({ disabled }),
+  });
 }
