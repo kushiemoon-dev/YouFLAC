@@ -251,7 +251,7 @@ func (s *Server) handleReorganizePlaylist(c *fiber.Ctx) error {
 			}
 			result.Renamed++
 			if s.config.GenerateNFO {
-				core.WriteNFO(metadata, core.GenerateNFOPath(newPath), nil) // best-effort
+				_ = core.WriteNFO(metadata, core.GenerateNFOPath(newPath), nil) // best-effort
 			}
 		}
 	}

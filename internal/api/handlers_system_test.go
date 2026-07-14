@@ -110,7 +110,7 @@ func TestHandleGetLogs_ReturnsArray(t *testing.T) {
 
 func TestHandleUpdateCheck_NewVersionAvailable(t *testing.T) {
 	// Mock GitHub API returning a newer version
-	gh := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	gh := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		fmt.Fprintf(w, `{"tag_name":"v9.9.9","html_url":"https://github.com/kushiemoon-dev/YouFLAC/releases/tag/v9.9.9"}`)
 	}))
@@ -155,7 +155,7 @@ func TestHandleUpdateCheck_NewVersionAvailable(t *testing.T) {
 
 func TestHandleUpdateCheck_GitHubError_GracefulDegradation(t *testing.T) {
 	// Mock GitHub API returning 500
-	gh := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	gh := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 	}))
 	defer gh.Close()

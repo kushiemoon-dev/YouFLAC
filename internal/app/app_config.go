@@ -17,12 +17,12 @@ func (a *App) GetConfig() (*core.Config, error) {
 
 func (a *App) SaveConfig(config core.Config) error {
 	if err := validate.ValidateOutputDirectory(config.OutputDirectory); err != nil {
-		return fmt.Errorf("Invalid output directory: %w", err)
+		return fmt.Errorf("invalid output directory: %w", err)
 	}
 
 	if len(config.AudioSourcePriority) > 0 {
 		if err := validate.ValidateAudioSources(config.AudioSourcePriority); err != nil {
-			return fmt.Errorf("Invalid audio source priority: %w", err)
+			return fmt.Errorf("invalid audio source priority: %w", err)
 		}
 	}
 

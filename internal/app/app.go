@@ -95,7 +95,9 @@ func (a *App) Startup(ctx context.Context) {
 	a.queue.StartProcessing()
 }
 
-func (a *App) Shutdown(ctx context.Context) {
+func (a *App) Shutdown(_ context.Context) {
 	a.queue.StopProcessing()
-	a.queue.SaveQueue()
+	if err := a.queue.SaveQueue(); err != nil {
+		log.Printf("failed to save queue: %v", err)
+	}
 }

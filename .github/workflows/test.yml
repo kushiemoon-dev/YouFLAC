@@ -2,16 +2,44 @@ name: Test & Coverage
 
 on:
   push:
-    branches-ignore: [main]
   pull_request:
     branches: [main]
 
 jobs:
-  # lint removed: golangci-lint does not yet support Go 1.25 — use `make lint` locally
+  # All jobs below need the private youflac-core module (github.com/kushiemoon-dev/youflac-core/v4),
+  # which is imported directly by both the Go code (internal/api, internal/app, cmd/server) and the
+  # frontend (frontend/wailsjs bindings are generated FROM the compiled Go module, and lib/api.ts /
+  # lib/websocket.ts import those bindings unconditionally). There is no mock/interface boundary to
+  # build or type-check against without it, so a PR opened from a fork — which GitHub never hands
+  # repo secrets to — cannot run any of go build/go vet/go test/golangci-lint/tsc/vitest here.
+  # The `if:` below skips (not fails) these jobs for fork PRs instead of dying on a cryptic private-
+  # module auth error. (Job-level `if:` can't read the `secrets` context directly — GitHub Actions
+  # only exposes secrets to `env:`, `with:`, and step-level `if:` — so this checks fork origin via
+  # the `github` context instead, which is equivalent here since only forks lack the token.)
+  # See the fork-safe-check job below for what CAN still run for external contributors.
+  lint:
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+    env:
+      GOPRIVATE: github.com/kushiemoon-dev/*
+      GONOSUMDB: github.com/kushiemoon-dev/*
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure private Go modules
+        run: git config --global url."https://x-access-token:${{ secrets.CORE_ACCESS_TOKEN }}@github.com/".insteadOf "https://github.com/"
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v9
+        with:
+          version: v2.12.2
+
   # youflac-core is a real pinned module dependency (go.mod) with its own CI/release
   # process — no sibling checkout needed here.
   build-check:
     runs-on: ubuntu-latest
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
     env:
       GOPRIVATE: github.com/kushiemoon-dev/*
       GONOSUMDB: github.com/kushiemoon-dev/*
@@ -37,13 +65,24 @@ jobs:
         run: go build ./cmd/server
       - name: Build desktop entrypoint
         run: go build .
-      - name: Test
-        run: go test ./...
+      - name: Test with coverage
+        run: go test ./... -covermode=atomic -coverprofile=coverage.out
+      - name: Coverage summary
+        run: go tool cover -func=coverage.out | tail -1
+      - name: Coverage HTML report
+        run: go tool cover -html=coverage.out -o coverage.html
+      - uses: actions/upload-artifact@v4
+        with:
+          name: go-coverage
+          path: |
+            coverage.out
+            coverage.html
       - name: Vet
         run: go vet ./...
 
   test-frontend:
     runs-on: ubuntu-latest
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
     env:
       GOPRIVATE: github.com/kushiemoon-dev/*
       GONOSUMDB: github.com/kushiemoon-dev/*
@@ -74,3 +113,25 @@ jobs:
         working-directory: frontend
       - run: pnpm test:run
         working-directory: frontend
+
+  # Runs unconditionally, including on fork PRs without CORE_ACCESS_TOKEN — the one check in this
+  # repo that needs neither the private module nor any secret. gofmt operates on source text only
+  # (no type-checking, no import resolution), so it's the only meaningful signal available to an
+  # external contributor before a maintainer can review and run the full suite. Everything else
+  # (go vet, go build, go test, golangci-lint, tsc, vitest) is a hard blocker without the private
+  # module — see the comment above the `lint` job for why.
+  fork-safe-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - name: gofmt (no private module required)
+        run: |
+          unformatted=$(gofmt -l .)
+          if [ -n "$unformatted" ]; then
+            echo "The following files are not gofmt-formatted:"
+            echo "$unformatted"
+            exit 1
+          fi

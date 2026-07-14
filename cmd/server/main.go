@@ -94,8 +94,12 @@ func main() {
 		log.Println("Shutting down...")
 		cancel()
 		queue.StopProcessing()
-		queue.SaveQueue()
-		server.Shutdown()
+		if err := queue.SaveQueue(); err != nil {
+			log.Printf("failed to save queue: %v", err)
+		}
+		if err := server.Shutdown(); err != nil {
+			log.Printf("failed to shut down server: %v", err)
+		}
 	}()
 
 	// Get port from env or default

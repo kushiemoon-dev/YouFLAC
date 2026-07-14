@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -250,7 +251,7 @@ func (a *App) ReorganizePlaylist(folderPath string) (ReorganizeResult, error) {
 			}
 			result.Renamed++
 			if a.config.GenerateNFO {
-				core.WriteNFO(metadata, core.GenerateNFOPath(newPath), nil) // best-effort
+				_ = core.WriteNFO(metadata, core.GenerateNFOPath(newPath), nil) // best-effort
 			}
 		}
 	}
@@ -505,5 +506,7 @@ func (a *App) handlePreview(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "audio/ogg")
 	w.Header().Set("Cache-Control", "no-store")
-	io.Copy(w, reader)
+	if _, err := io.Copy(w, reader); err != nil {
+		log.Printf("failed to stream audio preview: %v", err)
+	}
 }
