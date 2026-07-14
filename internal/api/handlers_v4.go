@@ -155,4 +155,3 @@ func sldlVersion(binaryPath string) string {
 	}
 	return strings.SplitN(strings.TrimSpace(string(out)), "\n", 2)[0]
 }
-

@@ -98,6 +98,20 @@ describe('lib/api.ts — Wails mode (isWailsRuntime() === true)', () => {
     expect(await SelectSaveAudioFile('out.flac')).toBe('/out.flac');
     expect(App.SelectSaveAudioFile).toHaveBeenCalledWith('out.flac');
   });
+
+  it('SearchHistory()/FilterHistoryBySource()/FilterHistoryByStatus() fill the right positional slot of the shared App.SearchHistory(query, source, status) binding', async () => {
+    const { SearchHistory, FilterHistoryBySource, FilterHistoryByStatus } = await import('./api');
+    vi.mocked(App.SearchHistory).mockResolvedValue([] as any);
+
+    await SearchHistory('abba');
+    expect(App.SearchHistory).toHaveBeenCalledWith('abba', '', '');
+
+    await FilterHistoryBySource('tidal');
+    expect(App.SearchHistory).toHaveBeenCalledWith('', 'tidal', '');
+
+    await FilterHistoryByStatus('failed');
+    expect(App.SearchHistory).toHaveBeenCalledWith('', '', 'failed');
+  });
 });
 
 describe('lib/api.ts — browser mode (isWailsRuntime() === false)', () => {
@@ -220,5 +234,21 @@ describe('lib/api.ts — browser mode (isWailsRuntime() === false)', () => {
     mockFetchOnce(undefined);
     await OpenConfigFolder();
     expect(fetch).toHaveBeenCalledWith('/api/system/open-config-folder', expect.objectContaining({ method: 'POST' }));
+  });
+
+  it('SearchHistory()/FilterHistoryBySource()/FilterHistoryByStatus() each hit /history/search with the right query param name', async () => {
+    const { SearchHistory, FilterHistoryBySource, FilterHistoryByStatus } = await import('./api');
+
+    mockFetchOnce([]);
+    await SearchHistory('abba');
+    expect(fetch).toHaveBeenCalledWith('/api/history/search?q=abba', expect.objectContaining({}));
+
+    mockFetchOnce([]);
+    await FilterHistoryBySource('tidal');
+    expect(fetch).toHaveBeenCalledWith('/api/history/search?source=tidal', expect.objectContaining({}));
+
+    mockFetchOnce([]);
+    await FilterHistoryByStatus('failed');
+    expect(fetch).toHaveBeenCalledWith('/api/history/search?status=failed', expect.objectContaining({}));
   });
 });

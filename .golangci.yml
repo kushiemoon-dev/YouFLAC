@@ -1,25 +1,32 @@
-run:
-  timeout: 5m
-
+version: "2"
 linters:
   enable:
-    - errcheck
-    - gosimple
-    - govet
-    - ineffassign
-    - staticcheck
-    - unused
-    - gofmt
     - misspell
     - revive
-
-issues:
-  exclude-rules:
-    # Test helpers intentionally ignore some errors
-    - path: _test\.go
-      linters:
-        - errcheck
-    # Wails-generated app.go has code that appears unused from static analysis
-    - path: app\.go
-      linters:
-        - unused
+  exclusions:
+    generated: lax
+    presets:
+      - comments
+      - common-false-positives
+      - legacy
+      - std-error-handling
+    rules:
+      - linters:
+          - errcheck
+        path: _test\.go
+      - linters:
+          - unused
+        path: app\.go
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
+formatters:
+  enable:
+    - gofmt
+  exclusions:
+    generated: lax
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
