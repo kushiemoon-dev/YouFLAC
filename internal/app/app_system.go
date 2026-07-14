@@ -21,7 +21,7 @@ import (
 // package app (not internal/api) and the two are not meant to share state.
 // A var (not const) so release builds can set it via
 // -ldflags "-X youflac/internal/app.appVersion=...".
-var appVersion = "4.3.0"
+var appVersion = "4.4.0"
 
 // Health is kept for parity with the HTTP server's /health endpoint, even
 // though it's of limited use in a desktop app: by the time any Wails-bound
