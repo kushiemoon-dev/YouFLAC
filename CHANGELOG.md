@@ -1,5 +1,21 @@
 # Changelog
 
+## v4.4.0 — 2026-07-14
+
+### New features
+- **Headless server works in a browser again** — the v4.3.1 "restore Wails desktop app" refactor moved `lib/api.ts`/`lib/websocket.ts` to Wails-only bindings (`window.go.*`), which broke the documented, released headless server (`youflac-server-*` binaries) in an actual browser tab, since `window.go` only exists inside the Wails webview. Restored dual-mode support: every function now checks a cached runtime detector and picks the Wails binding or a `fetch()`/WebSocket call to the Fiber server, reusing the pre-regression HTTP client logic rather than rewriting it.
+- Amazon Music URLs are now recognized on the queue-add path and return a clear "fallback-only source" error instead of falling through to generic YouTube URL validation.
+- Qobuz provider list now reflects live config (`Config.QobuzProxyProviders`) instead of a hardcoded, long-dead provider list.
+- `/api/sources` distinguishes "not initialized" from "no sources" instead of returning a bare empty array either way.
+- `go test`/`golangci-lint` (migrated to v2) now run in CI with real coverage collection; `main` is tested on every push, not just other branches.
+
+### Internal
+- Core dependency bumped to `v4.4.0` — real 4K/2160p support, real fake-lossless detection, dehardcoded Qobuz proxy providers, `ForceSource` wiring (see [youflac-core's changelog](https://github.com/kushiemoon-dev/youflac-core/blob/main/CHANGELOG.md)).
+- Fixed 12 pre-existing findings surfaced by reactivating golangci-lint (errcheck on best-effort calls, unused params, error-string casing).
+- Added `useQueue`/`useSettings` hook tests and closed a `SearchHistory` dispatch coverage gap.
+
+---
+
 ## v4.3.1 — 2026-07-11
 
 ### New features

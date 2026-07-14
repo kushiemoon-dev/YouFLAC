@@ -15,7 +15,7 @@ import (
 	"github.com/kushiemoon-dev/youflac-core/v4/system"
 )
 
-const AppVersion = "4.3.0"
+const AppVersion = "4.4.0"
 
 // Health check
 func (s *Server) handleHealth(c *fiber.Ctx) error {
