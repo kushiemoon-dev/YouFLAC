@@ -98,9 +98,10 @@ jobs:
           GOOS: ${{ matrix.goos }}
           GOARCH: ${{ matrix.goarch }}
           CGO_ENABLED: "0"
+          APP_VERSION: ${{ github.ref_name }}
         run: |
           go build \
-            -ldflags="-s -w -X youflac/internal/api.AppVersion=${{ github.ref_name }}" \
+            -ldflags="-s -w -X youflac/internal/api.AppVersion=$APP_VERSION" \
             -o ${{ matrix.binary }} \
             ./cmd/server
       - name: Package (tar.gz)
@@ -162,7 +163,8 @@ jobs:
       - name: Build
         env:
           CGO_ENABLED: '0'
-        run: wails build -platform windows/amd64 -trimpath -ldflags "-s -w -X youflac/internal/app.appVersion=${{ github.ref_name }}"
+          APP_VERSION: ${{ github.ref_name }}
+        run: wails build -platform windows/amd64 -trimpath -ldflags "-s -w -X youflac/internal/app.appVersion=$APP_VERSION"
 
       - uses: actions/upload-artifact@v4
         with:
@@ -206,7 +208,8 @@ jobs:
       - name: Build
         env:
           CGO_ENABLED: '1'
-        run: wails build -platform darwin/universal -trimpath -ldflags "-s -w -X youflac/internal/app.appVersion=${{ github.ref_name }}"
+          APP_VERSION: ${{ github.ref_name }}
+        run: wails build -platform darwin/universal -trimpath -ldflags "-s -w -X youflac/internal/app.appVersion=$APP_VERSION"
 
       - name: Create DMG
         run: |
@@ -282,7 +285,8 @@ jobs:
       - name: Build
         env:
           CGO_ENABLED: '1'
-        run: wails build -trimpath -ldflags "-s -w -X youflac/internal/app.appVersion=${{ github.ref_name }}"
+          APP_VERSION: ${{ github.ref_name }}
+        run: wails build -trimpath -ldflags "-s -w -X youflac/internal/app.appVersion=$APP_VERSION"
 
       - name: Compress with UPX
         run: upx --best build/bin/youflac
