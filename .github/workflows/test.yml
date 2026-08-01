@@ -24,16 +24,16 @@ jobs:
       GOPRIVATE: github.com/kushiemoon-dev/*
       GONOSUMDB: github.com/kushiemoon-dev/*
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - name: Configure private Go modules
         run: git config --global url."https://x-access-token:${{ secrets.CORE_ACCESS_TOKEN }}@github.com/".insteadOf "https://github.com/"
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
         with:
           go-version-file: go.mod
       - name: Create frontend/dist placeholder for embed
         run: mkdir -p frontend/dist && touch frontend/dist/.gitkeep
       - name: golangci-lint
-        uses: golangci/golangci-lint-action@v9
+        uses: golangci/golangci-lint-action@ba0d7d2ec06a0ea1cb5fa41b2e4a3ab91d21278a # v9
         with:
           version: v2.12.2
 
@@ -46,16 +46,16 @@ jobs:
       GOPRIVATE: github.com/kushiemoon-dev/*
       GONOSUMDB: github.com/kushiemoon-dev/*
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - name: Configure private Go modules
         run: git config --global url."https://x-access-token:${{ secrets.CORE_ACCESS_TOKEN }}@github.com/".insteadOf "https://github.com/"
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
         with:
           go-version-file: go.mod
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
         with:
           version: '11.1.1'
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: 22
           cache: 'pnpm'
@@ -79,7 +79,7 @@ jobs:
         run: go tool cover -func=coverage.out | tail -1
       - name: Coverage HTML report
         run: go tool cover -html=coverage.out -o coverage.html
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: go-coverage
           path: |
@@ -95,16 +95,16 @@ jobs:
       GOPRIVATE: github.com/kushiemoon-dev/*
       GONOSUMDB: github.com/kushiemoon-dev/*
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - name: Configure private Go modules
         run: git config --global url."https://x-access-token:${{ secrets.CORE_ACCESS_TOKEN }}@github.com/".insteadOf "https://github.com/"
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
         with:
           go-version-file: go.mod
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
         with:
           version: '11.1.1'
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: 22
           cache: 'pnpm'
@@ -131,8 +131,8 @@ jobs:
   fork-safe-check:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
         with:
           go-version-file: go.mod
       - name: gofmt (no private module required)
