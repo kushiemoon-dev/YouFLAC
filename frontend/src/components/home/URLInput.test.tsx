@@ -45,7 +45,7 @@ describe('URLInput channel detection', () => {
     await waitFor(() => screen.getByText(/Download Discography/i))
     // Simulate onTracksResolved by finding and clicking the modal's close area
     // We test the integration by verifying onAdd would be called from the parent handler
-    // Just verify modal is present — the onTracksResolved integration is tested in ChannelDownloadModal.test
+    // Just verify modal is present; the onTracksResolved integration is tested in ChannelDownloadModal.test
   })
 })
 

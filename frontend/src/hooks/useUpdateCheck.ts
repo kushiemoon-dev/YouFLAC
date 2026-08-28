@@ -26,7 +26,7 @@ export function useUpdateCheck(): {
           }
         })
         .catch(() => {
-          // ignore errors — graceful degradation
+          // ignore errors, graceful degradation
         });
     }, 5000);
 

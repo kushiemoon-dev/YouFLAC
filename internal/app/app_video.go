@@ -70,7 +70,7 @@ func (a *App) VideoCheck(url string) (core.AvailabilityResult, error) {
 }
 
 func (a *App) FindAudioMatch(videoInfo core.VideoInfo) (*core.MatchResult, error) {
-	// Use empty candidates and default options - the matcher will try to find matches
+	// Use empty candidates and default options: the matcher will try to find matches
 	return core.MatchVideoToAudio(&videoInfo, nil, nil)
 }
 

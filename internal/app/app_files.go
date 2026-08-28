@@ -231,7 +231,7 @@ func (a *App) ReorganizePlaylist(folderPath string) (ReorganizeResult, error) {
 			metadata := metadataFromPlaylistTrack(mediaPath, trackDir.Name())
 
 			// NB: core.RenameMKV hardcodes a ".mkv" destination extension, which
-			// would corrupt the audio-only ".flac" fallback output — build the
+			// would corrupt the audio-only ".flac" fallback output; build the
 			// destination path directly instead, preserving the real extension.
 			newPath := core.GenerateFilePath(metadata, a.config.NamingTemplate, outputDir, ext)
 			if newPath == mediaPath {
@@ -439,7 +439,7 @@ func sandboxPath(root, p string) (string, error) {
 //
 // Per wails' assetserver.Options docs, Handler is only invoked for GET
 // requests that Assets can't serve (os.ErrNotExist) and for all non-GET
-// requests — so it's safe to 404 anything that isn't our one route and let
+// requests; so it's safe to 404 anything that isn't our one route and let
 // the embedded frontend assets handle the rest.
 //
 // Route: GET /preview?url=<youtube_url>&seconds=30

@@ -37,7 +37,7 @@ const CopyIcon = () => (
   </svg>
 );
 
-// Donation addresses — update before release
+// Donation addresses, update before release
 const BTC_ADDRESS: string | null = null;
 const BTC_SHORT = 'coming soon';
 
@@ -102,7 +102,7 @@ export function About() {
       if (btcTimerRef.current !== null) clearTimeout(btcTimerRef.current);
       btcTimerRef.current = setTimeout(() => setBtcCopied(false), 2000);
     } catch {
-      // clipboard unavailable — silent fail
+      // clipboard unavailable, silent fail
     }
   }
 
@@ -166,7 +166,7 @@ export function About() {
             className="text-sm mb-6"
             style={{ color: 'var(--color-text-tertiary)' }}
           >
-            Download any YouTube video and replace its audio with a lossless FLAC sourced from Soulseek (with Tidal, Qobuz, Amazon Music, and Bandcamp fallback), muxed into a single high-quality MKV — with automatic source fallback and integrity verification.
+            Download any YouTube video and replace its audio with a lossless FLAC sourced from Soulseek (with Tidal, Qobuz, Amazon Music, and Bandcamp fallback), muxed into a single high-quality MKV, with automatic source fallback and integrity verification.
           </p>
 
           {/* Tech stack */}

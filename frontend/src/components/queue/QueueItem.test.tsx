@@ -80,12 +80,12 @@ describe('QueueItem', () => {
 
   it('shows Fix button for failed items', () => {
     render(<QueueItem item={failedItem} onCancel={() => {}} onRemove={() => {}} />);
-    expect(screen.getByTitle('Fix — retry with source')).toBeInTheDocument();
+    expect(screen.getByTitle('Fix: retry with source')).toBeInTheDocument();
   });
 
   it('shows source select and Retry button after clicking Fix', () => {
     render(<QueueItem item={failedItem} onCancel={() => {}} onRemove={() => {}} />);
-    fireEvent.click(screen.getByTitle('Fix — retry with source'));
+    fireEvent.click(screen.getByTitle('Fix: retry with source'));
     expect(screen.getByRole('combobox')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /^Retry$/ })).toBeInTheDocument();
   });

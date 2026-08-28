@@ -174,7 +174,7 @@ export function Converter() {
                   className="btn-secondary"
                   onClick={browseSourceFile}
                   disabled={!isWailsRuntime()}
-                  title={isWailsRuntime() ? undefined : 'Native file picker not available in browser mode — type the path directly'}
+                  title={isWailsRuntime() ? undefined : 'Native file picker not available in browser mode: type the path directly'}
                 >
                   Browse…
                 </button>
@@ -269,7 +269,7 @@ export function Converter() {
                   className="btn-secondary"
                   onClick={browseSourceDirectory}
                   disabled={!isWailsRuntime()}
-                  title={isWailsRuntime() ? undefined : 'Native folder picker not available in browser mode — type the path directly'}
+                  title={isWailsRuntime() ? undefined : 'Native folder picker not available in browser mode: type the path directly'}
                 >
                   Browse…
                 </button>

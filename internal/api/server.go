@@ -24,7 +24,7 @@ type Server struct {
 	wsHub     *WebSocketHub
 	registry  *channeljobs.ChannelJobRegistry
 
-	// v4 engine (optional — nil when not initialized)
+	// v4 engine (optional; nil when not initialized)
 	sourceMgr    *core.SourceManager
 	orchestrator *core.DownloadOrchestrator
 }
@@ -169,15 +169,15 @@ func (s *Server) setupRoutes() {
 	// Service status
 	api.Get("/services/status", s.handleServicesStatus)
 
-	// v4 — Sources
+	// v4: Sources
 	api.Get("/sources", s.handleGetSources)
 	api.Put("/sources/priority", s.handleSetSourcePriority)
 
-	// v4 — Qobuz providers
+	// v4: Qobuz providers
 	api.Get("/qobuz/providers", s.handleGetQobuzProviders)
 	api.Put("/qobuz/providers", s.handleSetQobuzProviders)
 
-	// v4 — Soulseek
+	// v4: Soulseek
 	api.Get("/soulseek/status", s.handleGetSoulseekStatus)
 	api.Post("/soulseek/login-test", s.handleSoulseekLoginTest)
 
@@ -199,10 +199,10 @@ func (s *Server) setupRoutes() {
 	})
 	s.app.Get("/ws", websocket.New(s.handleWebSocket))
 
-	// Static files (React build) - must be last
+	// Static files (React build): must be last
 	s.app.Static("/", "./frontend/dist")
 
-	// SPA fallback - serve index.html for all non-API routes
+	// SPA fallback: serve index.html for all non-API routes
 	s.app.Get("/*", func(c *fiber.Ctx) error {
 		return c.SendFile("./frontend/dist/index.html")
 	})

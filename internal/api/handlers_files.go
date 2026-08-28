@@ -231,7 +231,7 @@ func (s *Server) handleReorganizePlaylist(c *fiber.Ctx) error {
 			metadata := metadataFromPlaylistTrack(mediaPath, trackDir.Name())
 
 			// NB: core.RenameMKV hardcodes a ".mkv" destination extension, which
-			// would corrupt the audio-only ".flac" fallback output — build the
+			// would corrupt the audio-only ".flac" fallback output; build the
 			// destination path directly instead, preserving the real extension.
 			newPath := core.GenerateFilePath(metadata, s.config.NamingTemplate, outputDir, ext)
 			if newPath == mediaPath {

@@ -10,7 +10,7 @@ import (
 // TestAddToQueue_AmazonURL_ReturnsClearError verifies that a pasted Amazon
 // Music URL gets a specific, actionable error instead of falling through to
 // the generic YouTube URL validation error. Amazon is deliberately not
-// routable by URL (see core.IsAmazonURL / DetectURLSource doc comments —
+// routable by URL (see core.IsAmazonURL / DetectURLSource doc comments,
 // AmazonSource is fallback-only), so this must not be routed like
 // Qobuz/Tidal/Spotify. Uses a zero-value App since the error must be
 // returned before a.queue is ever touched.

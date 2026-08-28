@@ -176,7 +176,7 @@ func (a *App) SetSourcePriority(priority []string) error {
 
 // GetQobuzProviders reports the providers actually configured at runtime
 // (Config.QobuzProxyProviders / env QOBUZ_PROXY_PROVIDERS), not a hardcoded
-// registry — "available" is empty unless the operator opted in. Limitation:
+// registry; "available" is empty unless the operator opted in. Limitation:
 // this is config state, not live per-provider health; the core does not
 // currently expose whether an enabled provider is actually reachable (see
 // QobuzSource.IsAvailable, which is source-wide, not per-provider).

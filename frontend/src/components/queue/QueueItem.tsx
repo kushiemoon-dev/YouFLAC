@@ -139,7 +139,7 @@ export function QueueItem({
 
   function handleRetryOverride(id: string, override: RetryOverrideRequest) {
     retryWithOverride(id, override).catch(() => {
-      // Silently fall back — the queue will reflect error state via WebSocket
+      // Silently fall back; the queue will reflect error state via WebSocket
     });
   }
 
@@ -273,7 +273,7 @@ export function QueueItem({
               )}
               {item.matchCandidates && item.matchCandidates.length > 0 && (
                 <p className="text-xs mt-0.5" style={{ color: 'var(--color-text-tertiary)' }}>
-                  {item.matchCandidates.length} candidate{item.matchCandidates.length > 1 ? 's' : ''} found — click &quot;Edit &amp; Retry&quot; to select
+                  {item.matchCandidates.length} candidate{item.matchCandidates.length > 1 ? 's' : ''} found, click &quot;Edit &amp; Retry&quot; to select
                 </p>
               )}
               {item.matchDiagnostics?.failureReason && !item.matchCandidates?.length && !item.matchDiagnostics?.sourcesTried?.length && (
@@ -366,12 +366,12 @@ export function QueueItem({
                 </button>
               )}
 
-              {/* Fix button for errors — retry with forced source */}
+              {/* Fix button for errors, retry with forced source */}
               {status === 'error' && (
                 <button
                   className="btn-icon"
                   onClick={() => setShowFixForm(v => !v)}
-                  title="Fix — retry with source"
+                  title="Fix: retry with source"
                 >
                   <WrenchIcon />
                 </button>

@@ -72,7 +72,7 @@ const themeOptions = [
 ];
 
 const fontOptions = [
-  { value: 'outfit', label: 'Outfit', description: 'Default — geometric sans-serif' },
+  { value: 'outfit', label: 'Outfit', description: 'Default, geometric sans-serif' },
   { value: 'inter', label: 'Inter', description: 'Clean, versatile sans-serif' },
   { value: 'bricolage', label: 'Bricolage Grotesque', description: 'Playful, expressive display font' },
 ];

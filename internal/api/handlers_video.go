@@ -92,7 +92,7 @@ func (s *Server) handleFindAudioMatch(c *fiber.Ctx) error {
 		return c.Status(400).JSON(fiber.Map{"error": "Invalid request body"})
 	}
 
-	// Use empty candidates and default options - the matcher will try to find matches
+	// Use empty candidates and default options: the matcher will try to find matches
 	result, err := core.MatchVideoToAudio(&videoInfo, nil, nil)
 	if err != nil {
 		return c.Status(500).JSON(fiber.Map{"error": err.Error()})

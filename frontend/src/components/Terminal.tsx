@@ -37,7 +37,7 @@ export function Terminal() {
           });
         }
       } catch {
-        // Backend unavailable — skip silently
+        // Backend unavailable, skip silently
       }
     };
 

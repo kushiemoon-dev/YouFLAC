@@ -22,7 +22,7 @@ export function SoulseekSetup({ username, password, onUsernameChange, onPassword
       const result = await testLogin(username, password);
       setTestResult({
         ok: result.ok,
-        message: result.ok ? 'Connection successful — save to confirm.' : 'Connection failed. Check credentials.',
+        message: result.ok ? 'Connection successful. Save to confirm.' : 'Connection failed. Check credentials.',
       });
     } catch (err) {
       setTestResult({ ok: false, message: err instanceof Error ? err.message : 'Connection failed' });
@@ -44,7 +44,7 @@ export function SoulseekSetup({ username, password, onUsernameChange, onPassword
             Soulseek
           </p>
           <p className="text-xs mt-0.5" style={{ color: 'var(--color-text-tertiary)' }}>
-            Peer-to-peer network — lossless fallback source
+            Peer-to-peer network: lossless fallback source
           </p>
         </div>
         <button
@@ -60,7 +60,7 @@ export function SoulseekSetup({ username, password, onUsernameChange, onPassword
         </button>
       </div>
 
-      {/* Binary status badge — always visible */}
+      {/* Binary status badge, always visible */}
       <div className="flex items-center gap-2">
         {loading ? (
           <div className="animate-spin w-3 h-3 border-2 border-current border-t-transparent rounded-full" style={{ color: 'var(--color-text-tertiary)' }} />

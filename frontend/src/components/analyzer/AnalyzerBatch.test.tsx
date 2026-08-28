@@ -37,7 +37,7 @@ describe('AnalyzerBatch', () => {
 
   it('"Analyze All" button is disabled when no files selected', () => {
     render(<AnalyzerBatch />);
-    // Button is not rendered until files are added — verify it's absent
+    // Button is not rendered until files are added; verify it's absent
     expect(screen.queryByRole('button', { name: /Analyze All/i })).not.toBeInTheDocument();
   });
 

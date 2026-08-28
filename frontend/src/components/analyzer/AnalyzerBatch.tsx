@@ -58,7 +58,7 @@ export function AnalyzerBatch() {
         // file.path is injected by Wails/Electron; unavailable in plain browser context.
         const path = (file as File & { path?: string }).path;
         if (!path) {
-          throw new Error('Full path unavailable — batch analyzer requires the desktop app');
+          throw new Error('Full path unavailable: batch analyzer requires the desktop app');
         }
         const analysis = await Api.AnalyzeAudio(path);
         setResults((prev) => {

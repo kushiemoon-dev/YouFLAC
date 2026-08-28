@@ -1,5 +1,5 @@
 /**
- * Real-time event subscription — dual mode. In the Wails webview this wraps
+ * Real-time event subscription, dual mode. In the Wails webview this wraps
  * the runtime's EventsOn/EventsOff. In a browser tab it maintains a single
  * shared, auto-reconnecting WebSocket connection to /ws and multiplexes
  * incoming messages to subscribers by event name, mirroring what the Wails
@@ -14,7 +14,7 @@
  *   - anything else (the raw core.QueueEvent broadcasts, whose own `type`
  *     field is a queue sub-status like "added"/"updated"/...) is dispatched
  *     to "queue:event" subscribers, matching internal/app/app.go's
- *     runtime.EventsEmit(ctx, "queue:event", event) — Wails emits every
+ *     runtime.EventsEmit(ctx, "queue:event", event); Wails emits every
  *     queue event under that one name regardless of its internal type.
  */
 
@@ -143,7 +143,7 @@ class BrowserEventBus {
     }
     callbacks.add(callback);
 
-    // Auto-connect on the very first subscriber, across all event names —
+    // Auto-connect on the very first subscriber, across all event names,
     // there is only one shared /ws connection for the whole app.
     if (this.subscriberCount() === 1) {
       this.connect();
@@ -159,7 +159,7 @@ class BrowserEventBus {
   }
 }
 
-// Singleton instance — one shared WebSocket connection for the whole app.
+// Singleton instance: one shared WebSocket connection for the whole app.
 const browserEventBus = new BrowserEventBus();
 
 export function EventsOn(eventName: string, callback: (data: any) => void): () => void {
@@ -174,7 +174,7 @@ export function EventsOff(eventName: string): void {
     WailsEventsOff(eventName);
     return;
   }
-  // Legacy API — with the subscribe pattern, cleanup happens automatically
+  // Legacy API: with the subscribe pattern, cleanup happens automatically
   // via the unsubscribe function returned by EventsOn.
   console.log(`[WebSocket] EventsOff called for: ${eventName}`);
 }

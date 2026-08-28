@@ -42,7 +42,7 @@ func (a *App) AddToQueue(req core.DownloadRequest) (string, error) {
 			req.VideoURL = ""
 		} else if core.IsAmazonURL(req.VideoURL) {
 			// Amazon is deliberately not routable by URL (AmazonSource.CanHandleURL
-			// always returns false — it's a fallback-only source matched via
+			// always returns false; it's a fallback-only source matched via
 			// ISRC/title+artist search, see core.DetectURLSource). Fail clearly here
 			// instead of letting it fall through to the generic YouTube URL error.
 			return "", fmt.Errorf("amazon music is not supported as direct input (fallback-only source): use title/artist search or a different source url instead")

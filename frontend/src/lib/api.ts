@@ -230,7 +230,7 @@ export interface FlattenPlaylistResult {
 
 // ============== HTTP client (headless/browser mode) ==============
 
-// API Base URL - empty for same-origin (production), can be set for dev
+// API Base URL, empty for same-origin (production), can be set for dev
 const API_BASE = import.meta.env.VITE_API_URL || '';
 
 // Generic fetch helper, used by every browser-mode function below.
@@ -255,13 +255,13 @@ async function api<T>(path: string, options?: RequestInit): Promise<T> {
 }
 
 // Native OS dialogs (SelectAudioFile/SelectDirectory/SelectSaveAudioFile) have
-// no sane browser equivalent — a <input type=file> can't return an absolute
+// no sane browser equivalent; a <input type=file> can't return an absolute
 // server-side path. Callers should gate the triggering UI on isWailsRuntime()
 // (see Converter.tsx/Resampler.tsx Browse buttons); this is the fallback for
 // anything that calls them anyway, so it fails loudly instead of trying to
 // read `window.go` and crashing with a cryptic TypeError.
 function requireWails(fnName: string): never {
-  throw new Error(`${fnName}() needs the desktop app (native OS dialog) — not available in browser mode.`);
+  throw new Error(`${fnName}() needs the desktop app (native OS dialog); not available in browser mode.`);
 }
 
 // ============== Queue API ==============
@@ -346,7 +346,7 @@ export async function RetryQueueItemWithSource(id: string, forceSource: string):
 
 export async function ClearQueue(): Promise<void> {
   if (isWailsRuntime()) {
-    // Same server-side action as ClearCompleted — only one Go method exists.
+    // Same server-side action as ClearCompleted; only one Go method exists.
     await App.ClearCompleted();
     return;
   }
@@ -510,7 +510,7 @@ export async function ConvertDirectory(opts: ConvertDirOptions): Promise<DirConv
     return App.ConvertDirectory(opts as any) as unknown as Promise<DirConvertResult>;
   }
   // The HTTP endpoint (internal/api/handlers_audio_tools.go) only acks
-  // {success, message} — the real per-file and final results stream over
+  // {success, message}; the real per-file and final results stream over
   // /ws as "convert_progress" events instead. Wait for the event carrying
   // done:true so this function resolves with the real result either way,
   // matching the Wails binding's contract for callers (e.g. Converter.tsx).
@@ -619,7 +619,7 @@ export async function GenerateSpectrogram(filePath: string): Promise<string> {
     // <img src> keep working unchanged.
     return App.GenerateSpectrogram(filePath);
   }
-  // The HTTP endpoint still returns a temp file path — a second
+  // The HTTP endpoint still returns a temp file path; a second
   // GetImageAsDataURL() call resolves it (see AudioAnalyzer.tsx, which
   // already does this two-step call).
   const res = await api<{ path: string }>('/analyze/spectrogram', {
@@ -681,7 +681,7 @@ export async function OpenConfigFolder(): Promise<void> {
 
 // ============== Dialogs API ==============
 // Native OS file/folder pickers, for use instead of hand-typed paths.
-// Wails-only — see requireWails() above. Return '' when the user cancels.
+// Wails-only; see requireWails() above. Return '' when the user cancels.
 
 export async function SelectAudioFile(): Promise<string> {
   if (isWailsRuntime()) return App.SelectAudioFile();
@@ -715,7 +715,7 @@ export async function CheckForUpdates(): Promise<UpdateCheckResult> {
 // ============== Preview API ==============
 
 // Returns the URL for streaming a short audio preview (OGG/Vorbis).
-// Use directly as <audio src> — no fetch needed. In Wails mode this is
+// Use directly as <audio src>; no fetch needed. In Wails mode this is
 // served by the AssetServer's custom handler (see app_files.go's
 // previewAssetHandler); in browser mode it's the headless server's
 // /api/video/preview route.

@@ -232,7 +232,7 @@ export function FileManager() {
     init();
   }, []);
 
-  // No need to reload when tab changes - we load all files and filter in frontend
+  // No need to reload when tab changes: we load all files and filter in frontend
 
   const tabs: { id: Tab; label: string; count: number }[] = [
     { id: 'videos', label: 'Videos', count: files.filter(f => f.type === 'video').length },

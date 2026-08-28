@@ -49,7 +49,7 @@ func TestHandleGetVersion_OK(t *testing.T) {
 
 // TestHandleServicesStatus_OK exercises the real handler wiring. CheckServiceStatus
 // probes real external endpoints (tidal.com, qobuz.com, ...) with a 10s timeout each,
-// run in parallel — this may be slow/network-dependent but always returns 200 with a
+// run in parallel; this may be slow/network-dependent but always returns 200 with a
 // well-formed map regardless of reachability, so the test remains deterministic.
 func TestHandleServicesStatus_OK(t *testing.T) {
 	s := newTestServer(t)
@@ -170,7 +170,7 @@ func TestHandleUpdateCheck_GitHubError_GracefulDegradation(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	// Must not return 5xx — graceful degradation
+	// Must not return 5xx, graceful degradation
 	if resp.StatusCode != http.StatusOK {
 		t.Fatalf("expected 200 (graceful), got %d", resp.StatusCode)
 	}

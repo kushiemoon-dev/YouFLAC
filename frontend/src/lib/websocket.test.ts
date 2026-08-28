@@ -42,7 +42,7 @@ beforeEach(() => {
   vi.stubGlobal('WebSocket', FakeWebSocket as unknown as typeof WebSocket);
 });
 
-describe('lib/websocket.ts — Wails mode (isWailsRuntime() === true)', () => {
+describe('lib/websocket.ts: Wails mode (isWailsRuntime() === true)', () => {
   beforeEach(() => {
     vi.mocked(isWailsRuntime).mockReturnValue(true);
   });
@@ -70,7 +70,7 @@ describe('lib/websocket.ts — Wails mode (isWailsRuntime() === true)', () => {
   });
 });
 
-describe('lib/websocket.ts — browser mode (isWailsRuntime() === false)', () => {
+describe('lib/websocket.ts: browser mode (isWailsRuntime() === false)', () => {
   beforeEach(() => {
     vi.mocked(isWailsRuntime).mockReturnValue(false);
   });

@@ -109,7 +109,7 @@ export function EditMetadataModal({ item, onClose, onRetry }: EditMetadataModalP
             {candidates.length > 0 && (
               <div className="flex flex-col gap-2">
                 <span className="text-sm font-medium" style={{ color: 'var(--color-text-secondary)' }}>
-                  Candidates found — select one to auto-fill URL:
+                  Candidates found. Select one to auto-fill URL:
                 </span>
                 <div className="flex flex-col gap-1">
                   {candidates.map((c, i) => (

@@ -4,7 +4,7 @@
  *
  * NOTE: If any task rejects, the returned promise rejects immediately but
  * already-started workers continue until they complete. Tasks should handle
- * their own errors and never reject — use try/catch internally and return
+ * their own errors and never reject; use try/catch internally and return
  * a sentinel value instead of throwing.
  */
 export async function runWithConcurrency<T>(

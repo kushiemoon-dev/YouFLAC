@@ -31,7 +31,7 @@ describe('isWailsRuntime', () => {
     expect(isWailsRuntime()).toBe(false);
   });
 
-  it('caches the result — later changes to window.go/runtime do not flip it', async () => {
+  it('caches the result, later changes to window.go/runtime do not flip it', async () => {
     const { isWailsRuntime } = await import('./runtime');
     expect(isWailsRuntime()).toBe(false);
 

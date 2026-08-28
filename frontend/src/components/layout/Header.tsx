@@ -39,7 +39,7 @@ export function Header({ title, subtitle }: HeaderProps) {
         </div>
       </div>
 
-      {/* Right side - could add notification bell, etc */}
+      {/* Right side, could add notification bell, etc */}
       <div className="flex items-center gap-3">
         {/* Waveform animation indicator */}
         <div className="waveform-bg opacity-60">

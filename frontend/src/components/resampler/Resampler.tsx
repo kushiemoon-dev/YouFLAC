@@ -53,7 +53,7 @@ export function Resampler() {
                 className="btn btn-secondary"
                 onClick={browseInput}
                 disabled={!isWailsRuntime()}
-                title={isWailsRuntime() ? undefined : 'Native file picker not available in browser mode — type the path directly'}
+                title={isWailsRuntime() ? undefined : 'Native file picker not available in browser mode: type the path directly'}
               >
                 Browse…
               </button>
@@ -69,7 +69,7 @@ export function Resampler() {
                 className="btn btn-secondary"
                 onClick={browseOutput}
                 disabled={!isWailsRuntime()}
-                title={isWailsRuntime() ? undefined : 'Native save picker not available in browser mode — type the path directly'}
+                title={isWailsRuntime() ? undefined : 'Native save picker not available in browser mode: type the path directly'}
               >
                 Browse…
               </button>

@@ -116,7 +116,7 @@ describe('useSettings', () => {
     });
 
     expect(result.current.saving).toBe(false);
-    // Config is only updated on success — a failed save must not silently apply.
+    // Config is only updated on success; a failed save must not silently apply.
     expect(result.current.config).toEqual(originalConfig);
   });
 

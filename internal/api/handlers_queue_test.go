@@ -116,7 +116,7 @@ func TestHandleAddToQueue_RoutesMusicServiceURLToSpotifyURL(t *testing.T) {
 // Amazon Music URL gets a specific, actionable error instead of falling
 // through to the generic YouTube URL validation error. Amazon is
 // deliberately not routable by URL (see core.IsAmazonURL / DetectURLSource
-// doc comments — AmazonSource is fallback-only), so this must not be routed
+// doc comments: AmazonSource is fallback-only), so this must not be routed
 // like Qobuz/Tidal/Spotify.
 func TestHandleAddToQueue_AmazonURL_ReturnsClearError(t *testing.T) {
 	s := newTestServer(t)
@@ -180,8 +180,8 @@ func TestHandleGetItemLogs_ReturnsBuffered(t *testing.T) {
 
 // TestHandleRemoveFromQueue_UnknownID_StillReturns200 characterizes the current
 // (perhaps surprising) behavior: core.Queue.RemoveFromQueue never returns an
-// error, even for an ID that isn't in the queue — idempotent delete is the
-// deliberate design (see youflac-core's TestRemoveNonExistent) — so the
+// error, even for an ID that isn't in the queue; idempotent delete is the
+// deliberate design (see youflac-core's TestRemoveNonExistent); so the
 // handler's 404 branch is currently unreachable and removing an unknown ID
 // succeeds silently.
 func TestHandleRemoveFromQueue_UnknownID_StillReturns200(t *testing.T) {
@@ -266,7 +266,7 @@ func TestHandleResumeQueueItem_NotPaused(t *testing.T) {
 	s := newTestServer(t)
 	id := addQueueItem(t, s, "https://www.youtube.com/watch?v=dQw4w9WgXcQ")
 
-	// Item is "pending", not "paused" — resume must reject it.
+	// Item is "pending", not "paused"; resume must reject it.
 	req := httptest.NewRequest(http.MethodPost, "/api/queue/"+id+"/resume", nil)
 	resp, err := s.app.Test(req, 5000)
 	if err != nil {

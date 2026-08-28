@@ -23,7 +23,7 @@ beforeEach(() => {
   vi.stubGlobal('fetch', vi.fn());
 });
 
-describe('lib/api.ts — Wails mode (isWailsRuntime() === true)', () => {
+describe('lib/api.ts: Wails mode (isWailsRuntime() === true)', () => {
   beforeEach(() => {
     vi.mocked(isWailsRuntime).mockReturnValue(true);
   });
@@ -114,7 +114,7 @@ describe('lib/api.ts — Wails mode (isWailsRuntime() === true)', () => {
   });
 });
 
-describe('lib/api.ts — browser mode (isWailsRuntime() === false)', () => {
+describe('lib/api.ts: browser mode (isWailsRuntime() === false)', () => {
   beforeEach(() => {
     vi.mocked(isWailsRuntime).mockReturnValue(false);
   });
@@ -173,12 +173,12 @@ describe('lib/api.ts — browser mode (isWailsRuntime() === false)', () => {
       return unsubscribe;
     });
 
-    // The HTTP endpoint only ever acks {success, message} — never the real result.
+    // The HTTP endpoint only ever acks {success, message}; never the real result.
     mockFetchOnce({ success: true, message: 'conversion complete' });
 
     const promise = ConvertDirectory({ dir: '/music', targetFormat: 'mp3' });
 
-    // Simulate an in-progress (not done) event first — must not resolve yet.
+    // Simulate an in-progress (not done) event first; must not resolve yet.
     capturedCallback?.({ sourcePath: '/music/a.flac', done: false });
     // Then the final event.
     capturedCallback?.(finalResult);
