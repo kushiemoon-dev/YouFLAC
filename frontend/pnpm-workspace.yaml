@@ -3,3 +3,5 @@ allowBuilds:
 
 overrides:
   esbuild: ">=0.28.1"
+  postcss: ">=8.5.23"
+  undici: ">=7.29.0 <8.0.0"
