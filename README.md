@@ -33,7 +33,7 @@ Every FLAC is verified for integrity and quality (sample rate, bit depth, true-l
 
 <div align="center">
 
-| Home — paste any YouTube URL | Download Queue |
+| Home (paste any YouTube URL) | Download Queue |
 |------------------------------|----------------|
 | ![Home](docs/screenshots/home.png) | ![Queue](docs/screenshots/queue-done.png) |
 
@@ -47,15 +47,15 @@ Every FLAC is verified for integrity and quality (sample rate, bit depth, true-l
 
 ## Features
 
-- **YouTube → MKV** — paste any YouTube, Spotify, or Tidal URL; yt-dlp downloads the video, Soulseek provides the FLAC, FFmpeg muxes both into a high-quality `.mkv`
-- **Playlists & Channels** — batch-download full YouTube playlists or channels
-- **Soulseek as primary FLAC source** — via [slsk-batchdl](https://github.com/fiso64/slsk-batchdl) (v2.6+); includes a real login connectivity test
-- **Multi-Source Fallback** — Soulseek → Tidal → Qobuz → Amazon Music → Bandcamp, tried in your configured priority order
-- **FLAC Verification** — integrity check + sample rate/bit depth/lossless validation before muxing; rejects fake-lossless files
-- **Source Priority UI** — drag-and-drop reorder directly in the settings panel
-- **Queue System** — concurrent downloads with live progress, retry, and WebSocket updates
-- **Playlist** — auto-generates `.m3u8` after batch downloads
-- **NFO + Lyrics** — metadata files for Jellyfin/Plex/Kodi, synced lyrics from LRCLIB
+- **YouTube → MKV**: paste any YouTube, Spotify, or Tidal URL; yt-dlp downloads the video, Soulseek provides the FLAC, FFmpeg muxes both into a high-quality `.mkv`
+- **Playlists & Channels**: batch-download full YouTube playlists or channels
+- **Soulseek as primary FLAC source**, via [slsk-batchdl](https://github.com/fiso64/slsk-batchdl) (v2.6+); includes a real login connectivity test
+- **Multi-Source Fallback**: Soulseek → Tidal → Qobuz → Amazon Music → Bandcamp, tried in your configured priority order
+- **FLAC Verification**: integrity check plus sample rate/bit depth/lossless validation before muxing; rejects fake-lossless files
+- **Source Priority UI**: drag-and-drop reorder directly in the settings panel
+- **Queue System**: concurrent downloads with live progress, retry, and WebSocket updates
+- **Playlist**: auto-generates `.m3u8` after batch downloads
+- **NFO + Lyrics**: metadata files for Jellyfin/Plex/Kodi, synced lyrics from LRCLIB
 
 ---
 
@@ -236,12 +236,12 @@ Requires Go 1.25+, Node.js 22+, pnpm 11+.
 
 ## Credits
 
-- [yt-dlp](https://github.com/yt-dlp/yt-dlp) — YouTube video downloading
-- [slsk-batchdl](https://github.com/fiso64/slsk-batchdl) — Soulseek batch downloader
-- [FFmpeg](https://ffmpeg.org) — Video/audio muxing and verification
-- [Fiber](https://gofiber.io) — HTTP framework
-- [Deezer API](https://developers.deezer.com) — ISRC enrichment during downloads
-- [LRCLIB](https://lrclib.net) — Synced lyrics
+- [yt-dlp](https://github.com/yt-dlp/yt-dlp): YouTube video downloading
+- [slsk-batchdl](https://github.com/fiso64/slsk-batchdl): Soulseek batch downloader
+- [FFmpeg](https://ffmpeg.org): Video/audio muxing and verification
+- [Fiber](https://gofiber.io): HTTP framework
+- [Deezer API](https://developers.deezer.com): ISRC enrichment during downloads
+- [LRCLIB](https://lrclib.net): Synced lyrics
 
 ---
 
