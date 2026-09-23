@@ -63,6 +63,9 @@ Thumbs.db
 
 # Planning/session files (local only)
 docs/plans/
+/TICKET.md
+/REQUIREMENTS.md
+/PLAN.md
 
 # Agent scratch
 .playwright-mcp/
