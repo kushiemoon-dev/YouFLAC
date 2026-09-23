@@ -1,6 +1,21 @@
 # Changelog
 
-## v4.4.0 — 2026-07-14
+## v4.4.3 — 2026-09-23
+
+### Fixes
+- `AppVersion` (used by the headless server's `/api/version`/`/api/health`) is now set correctly
+  by release builds — it was a Go `const`, which `-ldflags -X` cannot override, so every headless
+  server release reported `4.4.0` regardless of the actual tag.
+
+### Internal
+- CI now runs on Go 1.26.5 (previously 1.25).
+- Bumped `youflac-core` to `v4.4.3`, `wails` to `v2.13.0`, `vite` to `^8`.
+- `SoulseekSetup.tsx`'s displayed sldl path moved from `~/.local/share/flacidal/sldl` to
+  `~/.local/share/youflac/sldl`, matching youflac-core's `ResolveSldlPath` rename.
+
+---
+
+## v4.4.2 — 2026-07-16
 
 ### New features
 - **Headless server works in a browser again** — the v4.3.1 "restore Wails desktop app" refactor moved `lib/api.ts`/`lib/websocket.ts` to Wails-only bindings (`window.go.*`), which broke the documented, released headless server (`youflac-server-*` binaries) in an actual browser tab, since `window.go` only exists inside the Wails webview. Restored dual-mode support: every function now checks a cached runtime detector and picks the Wails binding or a `fetch()`/WebSocket call to the Fiber server, reusing the pre-regression HTTP client logic rather than rewriting it.
@@ -13,6 +28,9 @@
 - Core dependency bumped to `v4.4.0` — real 4K/2160p support, real fake-lossless detection, dehardcoded Qobuz proxy providers, `ForceSource` wiring (see [youflac-core's changelog](https://github.com/kushiemoon-dev/youflac-core/blob/main/CHANGELOG.md)).
 - Fixed 12 pre-existing findings surfaced by reactivating golangci-lint (errcheck on best-effort calls, unused params, error-string casing).
 - Added `useQueue`/`useSettings` hook tests and closed a `SearchHistory` dispatch coverage gap.
+- CI's `lint` and `build-check` jobs now generate the Wails JS bindings and a `frontend/dist`
+  placeholder before running — both jobs referenced `frontend/dist` (`go:embed`) or `wailsjs/`
+  (TypeScript imports) without ever creating them, unlike `test-frontend` which already did.
 
 ---
 
