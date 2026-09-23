@@ -5,8 +5,8 @@ go 1.26.5
 require (
 	github.com/gofiber/fiber/v2 v2.52.14
 	github.com/gofiber/websocket/v2 v2.2.1
-	github.com/kushiemoon-dev/youflac-core/v4 v4.4.0
-	github.com/wailsapp/wails/v2 v2.12.0
+	github.com/kushiemoon-dev/youflac-core/v4 v4.4.3
+	github.com/wailsapp/wails/v2 v2.13.0
 )
 
 require (
