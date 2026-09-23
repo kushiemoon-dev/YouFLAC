@@ -113,7 +113,7 @@ export function SoulseekSetup({ username, password, onUsernameChange, onPassword
             </p>
             {!binaryOk && (
               <p className="text-xs mt-1 pt-1" style={{ borderTop: '1px solid var(--color-border-subtle)', color: 'var(--color-text-tertiary)' }}>
-                Expected paths: <code>~/.local/share/flacidal/sldl</code>, <code>~/.local/bin/sldl</code>, or in PATH.
+                Expected paths: <code>~/.local/share/youflac/sldl</code>, <code>~/.local/bin/sldl</code>, or in PATH.
               </p>
             )}
           </div>
