@@ -117,13 +117,6 @@
 
 ---
 
-## v3.1.1 (2026-04-03)
-
-### Internal
-- CI only: fixed the release build (checkout youflac-core to resolve the module replace directive) and the broken backend path in the now-redundant `ci.yml`; no functional changes
-
----
-
 ## v3.1.0 (2026-04-03)
 
 ### Internal
