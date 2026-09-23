@@ -7,7 +7,7 @@
 [![GitHub Release](https://img.shields.io/github/v/release/kushiemoon-dev/YouFLAC?style=flat-square&color=e91e8c)](https://github.com/kushiemoon-dev/YouFLAC/releases/latest)
 [![Stars](https://img.shields.io/github/stars/kushiemoon-dev/YouFLAC?style=flat-square&color=a855f7)](https://github.com/kushiemoon-dev/YouFLAC/stargazers)
 [![License](https://img.shields.io/github/license/kushiemoon-dev/YouFLAC?style=flat-square&color=gray)](LICENSE)
-[![Go](https://img.shields.io/badge/Go-1.25-00ADD8?style=flat-square&logo=go&logoColor=white)](https://go.dev)
+[![Go](https://img.shields.io/badge/Go-1.26.5-00ADD8?style=flat-square&logo=go&logoColor=white)](https://go.dev)
 
 ![Linux](https://img.shields.io/badge/Linux-any-FCC624?style=flat-square&logo=linux&logoColor=black)
 ![macOS](https://img.shields.io/badge/macOS-Apple_Silicon-000000?style=flat-square&logo=apple&logoColor=white)
@@ -215,7 +215,7 @@ cd YouFLAC
 wails build
 ```
 
-Output: `build/bin/youflac`. Requires the [Wails CLI](https://wails.io) (`go install github.com/wailsapp/wails/v2/cmd/wails@latest`), Go 1.25+, Node.js 22+, pnpm 11+.
+Output: `build/bin/youflac`. Requires the [Wails CLI](https://wails.io) (`go install github.com/wailsapp/wails/v2/cmd/wails@latest`), Go 1.26.5+, Node.js 22+, pnpm 11+.
 
 ### Headless server
 
@@ -230,7 +230,7 @@ go build -o youflac-server ./cmd/server
 ./youflac-server
 ```
 
-Requires Go 1.25+, Node.js 22+, pnpm 11+.
+Requires Go 1.26.5+, Node.js 22+, pnpm 11+.
 
 ---
 
