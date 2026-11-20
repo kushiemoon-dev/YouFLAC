@@ -249,7 +249,7 @@ Requires Go 1.26.5+, Node.js 22+, pnpm 11+.
 
 <div align="center">
 
-[![Star History](docs/star-history.svg)](https://github.com/kushiemoon-dev/YouFLAC/stargazers)
+[![Star History](https://raw.githubusercontent.com/kushiemoon-dev/YouFLAC/star-history/star-history.svg)](https://github.com/kushiemoon-dev/YouFLAC/stargazers)
 
 </div>
 
